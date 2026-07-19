@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;height:100%;background:#08080b;}
+::selection{background:rgba(120,110,255,0.35);}
+::-webkit-scrollbar{width:9px;height:9px;}
+::-webkit-scrollbar-thumb{background:rgba(128,128,140,0.4);border-radius:6px;}
+::-webkit-scrollbar-thumb:hover{background:rgba(128,128,140,0.6);}
+::-webkit-scrollbar-track{background:transparent;}
+a{color:#8ea0ff;text-decoration:none;}a:hover{color:#b3c0ff;}
+button{font-family:inherit;}
+@keyframes sbIn{from{opacity:0;transform:scale(.84);}to{opacity:1;transform:scale(1);}}
+@keyframes scanSpin{to{transform:rotate(360deg);}}
+@keyframes scanPulse{0%,100%{opacity:.22;}50%{opacity:.6;}}
+@keyframes shimmer{0%{transform:translateX(-120%);}100%{transform:translateX(320%);}}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,12px);}to{opacity:1;transform:translate(-50%,0);}}
+</style>
+</helmet>
+<div style="height:100vh;width:100vw;display:flex;flex-direction:column;overflow:hidden;position:relative;background:var(--bg,#0c0c10);color:var(--text,#e7e7ec);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',system-ui,sans-serif;-webkit-font-smoothing:antialiased;transition:background .3s ease,color .3s ease;{{ themeVars }}">
+
+  <div style="height:42px;flex:0 0 auto;display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--border,rgba(255,255,255,0.06));background:var(--panelBar);position:relative;">
+    <div style="display:flex;gap:8px;align-items:center;">
+      <span style="width:12px;height:12px;border-radius:50%;background:#ff5f57;box-shadow:inset 0 0 0 0.5px rgba(0,0,0,0.2);"></span>
+      <span style="width:12px;height:12px;border-radius:50%;background:#febc2e;box-shadow:inset 0 0 0 0.5px rgba(0,0,0,0.2);"></span>
+      <span style="width:12px;height:12px;border-radius:50%;background:#28c840;box-shadow:inset 0 0 0 0.5px rgba(0,0,0,0.2);"></span>
+    </div>
+    <div style="position:absolute;left:0;right:0;text-align:center;font-size:13px;font-weight:600;color:var(--title);pointer-events:none;">Disk Visualizer — Macintosh HD</div>
+  </div>
+
+  <div style="height:52px;flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:0 18px;border-bottom:1px solid var(--border,rgba(255,255,255,0.06));background:var(--panel);">
+    {{ crumbEl }}
+    <div style="flex:1;"></div>
+    <div style="display:flex;align-items:center;gap:7px;height:30px;padding:0 12px;border-radius:8px;background:var(--searchBg);border:1px solid var(--searchBorder);color:var(--searchText);font-size:12.5px;min-width:184px;">
+      <span style="opacity:.7;font-size:14px;">⌕</span><span>Search This Mac</span>
+    </div>
+  </div>
+
+  <div style="flex:1;display:flex;min-height:0;">
+    <div style="width:264px;flex:0 0 auto;display:flex;flex-direction:column;border-right:1px solid var(--border,rgba(255,255,255,0.06));background:var(--panel);min-height:0;">
+      <div style="padding:14px 16px 8px;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--label);">Folder Structure</div>
+      <div style="flex:1;overflow:auto;min-height:0;">{{ treeEl }}</div>
+    </div>
+
+    <div style="flex:1;position:relative;min-width:0;display:flex;flex-direction:column;">
+      {{ viewEl }}
+      <sc-if value="{{ loading }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute;inset:0;background:var(--overlayBg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;z-index:20;">
+          <div style="position:relative;width:184px;height:184px;">
+            <div style="position:absolute;inset:0;border-radius:50%;border:1px solid var(--scanRing);animation:scanPulse 2s ease-in-out infinite;"></div>
+            <div style="position:absolute;inset:28px;border-radius:50%;border:1px solid var(--scanRing);animation:scanPulse 2s ease-in-out infinite .3s;"></div>
+            <div style="position:absolute;inset:56px;border-radius:50%;border:1px solid var(--scanRing);animation:scanPulse 2s ease-in-out infinite .6s;"></div>
+            <div style="position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,rgba(122,110,255,0) 0deg,rgba(122,110,255,0.5) 55deg,rgba(122,110,255,0) 92deg);animation:scanSpin 1.05s linear infinite;"></div>
+            <div style="position:absolute;left:50%;top:50%;width:9px;height:9px;border-radius:50%;background:#8a7bff;transform:translate(-50%,-50%);box-shadow:0 0 16px 3px rgba(138,123,255,0.65);"></div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:15px;font-weight:600;color:var(--scanText);">Scanning Macintosh HD…</div>
+            <div style="font-size:12.5px;color:var(--scanSub);margin-top:4px;">Indexing files and calculating sizes</div>
+          </div>
+          <div style="width:224px;height:4px;border-radius:3px;background:var(--scanTrack);overflow:hidden;position:relative;">
+            <div style="position:absolute;top:0;left:0;height:100%;width:42%;border-radius:3px;background:linear-gradient(90deg,rgba(138,123,255,0),#8a7bff,rgba(138,123,255,0));animation:shimmer 1.3s ease-in-out infinite;"></div>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="width:310px;flex:0 0 auto;display:flex;flex-direction:column;border-left:1px solid var(--border,rgba(255,255,255,0.06));background:var(--panel);min-height:0;">
+      <div style="padding:16px 18px 14px;border-bottom:1px solid var(--hair);">
+        <div style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--label);margin-bottom:12px;">Details</div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span style="width:40px;height:40px;border-radius:11px;flex:0 0 auto;background:{{ sel.badgeBg }};box-shadow:0 4px 12px rgba(0,0,0,0.35),inset 0 1px 0 rgba(255,255,255,0.28);"></span>
+          <div style="min-width:0;">
+            <div style="font-size:15px;font-weight:640;color:var(--name);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ sel.name }}</div>
+            <div style="font-size:12px;color:var(--kind);">{{ sel.kind }}</div>
+          </div>
+        </div>
+      </div>
+      <div style="flex:1;overflow:auto;min-height:0;padding:0 18px;">
+        <div style="padding:16px 0;border-bottom:1px solid var(--hair2);">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:3px;">Size on disk</div>
+          <div style="font-size:22px;font-weight:680;letter-spacing:-0.02em;color:var(--big);font-family:ui-monospace,'SF Mono',Menlo,monospace;">{{ sel.sizeLabel }}</div>
+          <div style="font-size:12px;color:var(--muted2);margin-top:2px;">{{ sel.pctLabel }}</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--hair2);font-size:12.5px;">
+          <span style="color:var(--muted);">Contents</span><span style="color:var(--value);">{{ sel.fileCountLabel }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--hair2);font-size:12.5px;">
+          <span style="color:var(--muted);">Modified</span><span style="color:var(--value);">{{ sel.modified }}</span>
+        </div>
+        <div style="padding:14px 0;">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Where</div>
+          <div style="font-size:12px;color:var(--path);word-break:break-all;line-height:1.55;font-family:ui-monospace,'SF Mono',Menlo,monospace;">{{ sel.path }}</div>
+        </div>
+      </div>
+      <div style="padding:14px 18px;border-top:1px solid var(--border,rgba(255,255,255,0.06));">
+        <button onClick="{{ reveal }}" style="width:100%;height:34px;border:1px solid var(--btnBorder);border-radius:9px;background:var(--btnBg);color:var(--text);font-size:13px;font-weight:560;cursor:pointer;transition:background .15s;" style-hover="background:var(--btnBgHover);">Reveal in Finder</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:60px;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 18px;border-top:1px solid var(--border,rgba(255,255,255,0.06));background:var(--bottomBar);">
+    {{ legendEl }}
+    {{ toggleEl }}
+  </div>
+
+  <sc-if value="{{ showToast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:50%;bottom:78px;transform:translateX(-50%);z-index:60;background:var(--toastBg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--toastBorder);border-radius:12px;padding:11px 18px;font-size:13px;color:var(--toastText);box-shadow:0 14px 44px rgba(0,0,0,0.35);animation:toastIn .28s ease;">{{ toast }}</div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:920,&quot;height&quot;:580},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  TYPES = {
+    folder:  {label:'Folder',    c0:'#5b6270', c1:'#828a99'},
+    video:   {label:'Video',     c0:'#6a4bff', c1:'#a86bff'},
+    image:   {label:'Images',    c0:'#22c55e', c1:'#5ee089'},
+    document:{label:'Documents', c0:'#f59e0b', c1:'#ffca57'},
+    archive: {label:'Archives',  c0:'#ef4444', c1:'#ff7a72'},
+    app:     {label:'Apps',      c0:'#14b8c6', c1:'#54e0ea'},
+    audio:   {label:'Audio',     c0:'#ec4899', c1:'#ff77b4'},
+    code:    {label:'Code',      c0:'#eab308', c1:'#ffe15a'},
+    system:  {label:'System',    c0:'#6b7280', c1:'#9aa2b1'},
+  };
+  MONO = "ui-monospace,'SF Mono',Menlo,monospace";
+  themes = {
+    dark: {
+      bg:'radial-gradient(140% 120% at 50% -10%,#17171d 0%,#0c0c10 55%,#08080b 100%)', text:'#e7e7ec', title:'#b7b7c0',
+      panel:'rgba(255,255,255,0.015)', panelBar:'rgba(255,255,255,0.02)', bottomBar:'rgba(255,255,255,0.025)',
+      border:'rgba(255,255,255,0.06)', hair:'rgba(255,255,255,0.05)', hair2:'rgba(255,255,255,0.04)',
+      label:'#6a6a74', muted:'#6f6f79', muted2:'#8a8a94', name:'#f0f0f5', kind:'#82828c', value:'#d2d2da', big:'#f2f2f7', path:'#b6b6c0',
+      searchBg:'rgba(255,255,255,0.05)', searchBorder:'rgba(255,255,255,0.07)', searchText:'#6f6f79',
+      btnBg:'rgba(255,255,255,0.07)', btnBorder:'rgba(255,255,255,0.1)', btnBgHover:'rgba(255,255,255,0.13)',
+      overlayBg:'radial-gradient(circle at 50% 45%,rgba(14,14,18,0.55),rgba(8,8,11,0.94))',
+      scanRing:'rgba(255,255,255,0.08)', scanText:'#d8d8e0', scanSub:'#7a7a84', scanTrack:'rgba(255,255,255,0.07)',
+      toastBg:'rgba(30,30,36,0.9)', toastBorder:'rgba(255,255,255,0.12)', toastText:'#eaeaef',
+      gap:'#0b0c10', centerC0:'#21222b', centerC1:'#101117',
+      treeText:'#c9c9d1', treeSize:'#75757f', treeSel:'rgba(120,110,255,0.22)', treeSelText:'#eef0ff', treeCur:'rgba(255,255,255,0.05)', treeHover:'rgba(255,255,255,0.06)', disc:'#8a8a94',
+      crumbLast:'#e9e9f0', crumb:'#8c8c96', crumbHover:'#c7c7d0', crumbSep:'#55555f',
+      tipBg:'rgba(28,28,34,0.85)', tipBorder:'rgba(255,255,255,0.12)', tipText:'#fff', tipSub:'#b9b9c2', tipVal:'#e6e6ea',
+      labelName:'#c7c7cf', labelBig:'#f2f2f7', labelSub:'#7a7a84', labelBack:'#8b8b95',
+      legend:'#a9a9b3', toggleActiveBg:'rgba(255,255,255,0.15)', toggleActiveText:'#fff', toggleText:'#9a9aa4',
+      emptyText:'#6a6a74', emptyBorder:'rgba(255,255,255,0.14)', tileHi:'rgba(255,255,255,0.15)', tileSel:'rgba(255,255,255,0.92)',
+    },
+    light: {
+      bg:'radial-gradient(140% 120% at 50% -10%,#ffffff 0%,#f1f2f5 55%,#e8e9ee 100%)', text:'#1d1d22', title:'#4a4a52',
+      panel:'rgba(0,0,0,0.02)', panelBar:'rgba(0,0,0,0.015)', bottomBar:'rgba(0,0,0,0.028)',
+      border:'rgba(0,0,0,0.09)', hair:'rgba(0,0,0,0.07)', hair2:'rgba(0,0,0,0.05)',
+      label:'#8a8a92', muted:'#8a8a92', muted2:'#6f6f79', name:'#18181d', kind:'#77777f', value:'#33333a', big:'#141419', path:'#4a4a54',
+      searchBg:'rgba(0,0,0,0.04)', searchBorder:'rgba(0,0,0,0.08)', searchText:'#8a8a92',
+      btnBg:'rgba(0,0,0,0.05)', btnBorder:'rgba(0,0,0,0.1)', btnBgHover:'rgba(0,0,0,0.09)',
+      overlayBg:'radial-gradient(circle at 50% 45%,rgba(255,255,255,0.55),rgba(232,233,238,0.94))',
+      scanRing:'rgba(0,0,0,0.08)', scanText:'#33333a', scanSub:'#8a8a92', scanTrack:'rgba(0,0,0,0.07)',
+      toastBg:'rgba(255,255,255,0.92)', toastBorder:'rgba(0,0,0,0.1)', toastText:'#18181d',
+      gap:'#eef0f3', centerC0:'#ffffff', centerC1:'#eceef2',
+      treeText:'#3a3a42', treeSize:'#9a9aa2', treeSel:'rgba(120,110,255,0.16)', treeSelText:'#2a2478', treeCur:'rgba(0,0,0,0.045)', treeHover:'rgba(0,0,0,0.055)', disc:'#9a9aa2',
+      crumbLast:'#1d1d22', crumb:'#8a8a92', crumbHover:'#55555c', crumbSep:'#b5b5bc',
+      tipBg:'rgba(255,255,255,0.92)', tipBorder:'rgba(0,0,0,0.1)', tipText:'#18181d', tipSub:'#77777f', tipVal:'#33333a',
+      labelName:'#55555c', labelBig:'#141419', labelSub:'#8a8a92', labelBack:'#8a8a92',
+      legend:'#6a6a72', toggleActiveBg:'#ffffff', toggleActiveText:'#18181d', toggleText:'#77777f',
+      emptyText:'#8a8a92', emptyBorder:'rgba(0,0,0,0.14)', tileHi:'rgba(255,255,255,0.22)', tileSel:'rgba(255,255,255,0.95)',
+    },
+  };
+  pal(){ return this.themes[(this.props && this.props.theme==='light') ? 'light' : 'dark']; }
+
+  state = { loading:true, view:'sunburst', hoverId:null, hx:0, hy:0, selId:null, toast:null };
+
+  componentDidMount(){
+    const root = this.buildData();
+    const exp = new Set();
+    const pre = (n,d)=>{ if(n.children){ if(d<=2) exp.add(n.id); n.children.forEach(c=>pre(c,d+1)); } };
+    pre(root,0);
+    this.setState({ root, current:root, sel:root, selId:root.id, expanded:exp });
+    this._t = setTimeout(()=>this.setState({loading:false}), 2200);
+  }
+  componentWillUnmount(){ clearTimeout(this._t); clearTimeout(this._tt); }
+
+  mulberry(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+
+  fmt(b){
+    if(b>=1099511627776) return (b/1099511627776).toFixed(2)+' TB';
+    if(b>=1073741824) return (b/1073741824).toFixed(b>=10*1073741824?0:1)+' GB';
+    if(b>=1048576) return (b/1048576).toFixed(0)+' MB';
+    if(b>=1024) return (b/1024).toFixed(0)+' KB';
+    return b+' B';
+  }
+  fmtDate(ms){ const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; const d=new Date(ms); return M[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear(); }
+
+  buildData(){
+    this._rng=this.mulberry(20260719); this._idc=0; this._map={};
+    const root=this.rawTree();
+    this.walk(root,null);
+    this.info(root);
+    return root;
+  }
+  walk(n,parent){
+    n.id='n'+(this._idc++); n.parent=parent;
+    n.path=parent? parent.path+'/'+n.name : '/Volumes/'+n.name;
+    this._map[n.id]=n;
+    if(n.children){
+      n.children.forEach(c=>this.walk(c,n));
+      n.size=n.children.reduce((s,c)=>s+c.size,0);
+      n._mod=Math.max.apply(null,n.children.map(c=>c._mod));
+    } else {
+      n._mod=Date.now()-Math.floor(this._rng()*430)*86400000-Math.floor(this._rng()*86400000);
+    }
+  }
+  info(n){
+    if(!n.children){ n._files=1; n._dom=n.type; return; }
+    n._files=0; const agg={};
+    n.children.forEach(c=>{ this.info(c); n._files+=c._files; agg[c._dom]=(agg[c._dom]||0)+c.size; });
+    n._dom=Object.keys(agg).sort((a,b)=>agg[b]-agg[a])[0]||'system';
+  }
+
+  rawTree(){
+    const GB=1073741824, MB=1048576, KB=1024;
+    const F=(name,type,size)=>({name,type,size});
+    const T=(name,children)=>({name,type:'folder',children});
+    return T('Macintosh HD',[
+      T('Applications',[
+        F('Xcode.app','app',14.8*GB),
+        F('Final Cut Pro.app','app',4.1*GB),
+        F('Logic Pro.app','app',6.3*GB),
+        F('Photoshop.app','app',3.7*GB),
+        F('Blender.app','app',1.2*GB),
+        F('Keynote.app','app',740*MB),
+        F('Safari.app','app',480*MB),
+        F('Sketch.app','app',320*MB),
+        F('Music.app','app',210*MB),
+        F('Notes.app','app',96*MB),
+      ]),
+      T('Users',[
+        T('alex',[
+          T('Movies',[
+            F('Iceland 4K.mov','video',8.9*GB),
+            F('Wedding Film.mp4','video',5.4*GB),
+            F('Drone Reel.mov','video',3.1*GB),
+            T('Screen Recordings',[
+              F('Demo 2026-05-11.mov','video',1.8*GB),
+              F('Bug Repro.mov','video',920*MB),
+              F('Standup.mov','video',640*MB),
+            ]),
+            T('Old Home Videos',[
+              F('Summer 2019.mp4','video',2.2*GB),
+              F('Birthday.mp4','video',1.4*GB),
+            ]),
+          ]),
+          T('Music',[
+            T('Discovery',[F('01 One More Time.flac','audio',52*MB),F('02 Aerodynamic.flac','audio',41*MB),F('03 Digital Love.flac','audio',48*MB),F('04 Harder Better.flac','audio',44*MB)]),
+            T('Kind of Blue',[F('01 So What.flac','audio',63*MB),F('02 Freddie Freeloader.flac','audio',58*MB),F('03 Blue in Green.flac','audio',39*MB)]),
+            T('Podcasts',[F('Ep 214.mp3','audio',88*MB),F('Ep 215.mp3','audio',92*MB),F('Ep 216.mp3','audio',85*MB)]),
+          ]),
+          T('Pictures',[
+            T('Photos Library.photoslibrary',[
+              F('Masters.data','image',7.4*GB),
+              F('IMG_4821.HEIC','image',6*MB),F('IMG_4822.HEIC','image',5*MB),F('IMG_4823.HEIC','image',7*MB),
+              F('IMG_4824.HEIC','image',5*MB),F('IMG_4825.HEIC','image',6*MB),F('IMG_4826.HEIC','image',8*MB),
+              T('Edits',[F('sunset-edit.tiff','image',210*MB),F('portrait-edit.tiff','image',180*MB)]),
+            ]),
+            T('Screenshots',[F('Screenshot 2026-06-01.png','image',3*MB),F('Screenshot 2026-06-14.png','image',4*MB),F('Screenshot 2026-07-02.png','image',3*MB)]),
+            T('Wallpapers',[F('Sonoma.heic','image',24*MB),F('Sequoia.heic','image',28*MB),F('Sierra.jpg','image',12*MB)]),
+          ]),
+          T('Documents',[
+            T('Work',[F('Q2 Report.pdf','document',14*MB),F('Roadmap.key','document',88*MB),F('Budget.xlsx','document',6*MB),F('Contract.pdf','document',3*MB),F('Deck.pptx','document',42*MB)]),
+            T('Projects',[
+              T('diskbloom',[F('App.swift','code',180*KB),F('SunburstView.swift','code',240*KB),F('Model.swift','code',96*KB),F('Assets.xcassets','image',48*MB),F('Package.resolved','code',12*KB)]),
+              T('website',[F('index.html','code',34*KB),F('styles.css','code',22*KB),F('app.js','code',180*KB),F('node_modules','code',1.4*GB)]),
+            ]),
+            T('Books',[F('SICP.pdf','document',24*MB),F('TAOCP Vol1.pdf','document',38*MB),F('Clean Code.epub','document',6*MB)]),
+            F('Taxes 2025.pdf','document',9*MB),
+          ]),
+          T('Downloads',[
+            F('macOS_Sequoia_Installer.dmg','app',13*GB),
+            F('Backup 2026-01.zip','archive',8.6*GB),
+            F('ubuntu-24.04.iso','archive',5.1*GB),
+            F('Concert Recording.mp4','video',3.8*GB),
+            F('project-assets.zip','archive',2.4*GB),
+            F('Annual Report.pdf','document',22*MB),
+          ]),
+          T('Desktop',[F('Screenshot.png','image',4*MB),F('mockup.sketch','image',180*MB),F('todo.txt','document',12*KB)]),
+        ]),
+      ]),
+      T('Library',[
+        T('Caches',[F('com.apple.Safari','system',2.1*GB),F('Google','system',1.4*GB),F('CloudKit','system',820*MB)]),
+        T('Application Support',[F('MobileSync','system',18*GB),F('Code','system',1.2*GB),F('Spotify','system',640*MB)]),
+        T('Containers',[F('com.apple.mail','system',3.4*GB),F('com.apple.Notes','system',280*MB)]),
+      ]),
+      T('System',[
+        F('Library','system',12.2*GB),
+        F('Core','system',9.4*GB),
+        F('Frameworks','system',6.8*GB),
+        F('Fonts','system',1.1*GB),
+      ]),
+    ]);
+  }
+
+  arc(cx,cy,rIn,rOut,a0,a1){
+    const pt=(r,a)=>[cx+r*Math.sin(a),cy-r*Math.cos(a)];
+    const large=(a1-a0)>Math.PI?1:0;
+    const [x0,y0]=pt(rOut,a0), [x1,y1]=pt(rOut,a1), [x2,y2]=pt(rIn,a1), [x3,y3]=pt(rIn,a0);
+    return 'M'+x0+' '+y0+' A'+rOut+' '+rOut+' 0 '+large+' 1 '+x1+' '+y1+' L'+x2+' '+y2+' A'+rIn+' '+rIn+' 0 '+large+' 0 '+x3+' '+y3+' Z';
+  }
+  computeArcs(current,maxDepth){
+    const arcs=[];
+    const rec=(node,depth,a0,a1)=>{
+      if(depth>maxDepth) return;
+      if(depth>=1) arcs.push({node,depth,a0,a1});
+      if(!node.children||!node.children.length) return;
+      const total=node.size||1; let a=a0;
+      const kids=[...node.children].sort((x,y)=>y.size-x.size);
+      for(const c of kids){ const span=(a1-a0)*(c.size/total); rec(c,depth+1,a,a+span); a+=span; }
+    };
+    rec(current,0,0,Math.PI*2);
+    return arcs;
+  }
+
+  onSeg(n){
+    if(n.children&&n.children.length){
+      const e=new Set(this.state.expanded); let x=n; while(x){e.add(x.id);x=x.parent;}
+      this.setState({current:n,sel:n,selId:n.id,expanded:e,hoverId:null});
+    } else { this.setState({sel:n,selId:n.id}); }
+  }
+  onCenter(){ const c=this.state.current; if(c&&c.parent) this.setState({current:c.parent,sel:c.parent,selId:c.parent.id,hoverId:null}); }
+  onCrumb(n){ this.setState({current:n,sel:n,selId:n.id,hoverId:null}); }
+  onTree(n){
+    if(n.children){ const e=new Set(this.state.expanded); e.add(n.id); this.setState({sel:n,selId:n.id,current:n,expanded:e,hoverId:null}); }
+    else { this.setState({sel:n,selId:n.id}); }
+  }
+  toggle(id){ const e=new Set(this.state.expanded); if(e.has(id))e.delete(id); else e.add(id); this.setState({expanded:e}); }
+
+  tooltip(){
+    const {hoverId,hx,hy}=this.state; if(!hoverId) return null;
+    const n=this._map[hoverId]; if(!n) return null;
+    const P=this._P; const type=n.children?n._dom:n.type; const m=this.TYPES[type];
+    const pct=n.parent? (n.size/n.parent.size*100).toFixed(1)+'%' : '100%';
+    return React.createElement('div',{style:{position:'fixed',left:hx+16,top:hy+16,zIndex:50,pointerEvents:'none',background:P.tipBg,backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',border:'1px solid '+P.tipBorder,borderRadius:12,padding:'10px 13px',minWidth:150,maxWidth:250,boxShadow:'0 12px 40px rgba(0,0,0,0.35)'}},
+      React.createElement('div',{style:{display:'flex',alignItems:'center',gap:7,marginBottom:6}},
+        React.createElement('span',{style:{width:9,height:9,borderRadius:3,flex:'0 0 auto',background:'linear-gradient(135deg,'+m.c0+','+m.c1+')'}}),
+        React.createElement('span',{style:{fontSize:13,fontWeight:600,color:P.tipText,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},n.name)),
+      React.createElement('div',{style:{display:'flex',justifyContent:'space-between',gap:16,fontSize:12,color:P.tipSub}},
+        React.createElement('span',{style:{fontFamily:this.MONO,color:P.tipVal}},this.fmt(n.size)),
+        React.createElement('span',null,pct+' of parent')));
+  }
+
+  buildStage(){
+    const {current,hoverId,selId}=this.state; if(!current) return null;
+    const P=this._P;
+    const cx=360,cy=360,R0=84,ringW=57,maxDepth=4;
+    const arcs=this.computeArcs(current,maxDepth);
+    const gradDefs=Object.keys(this.TYPES).map(t=>{ const m=this.TYPES[t]; return React.createElement('radialGradient',{key:t,id:'g_'+t,gradientUnits:'userSpaceOnUse',cx,cy,r:R0+maxDepth*ringW},React.createElement('stop',{offset:'0%',stopColor:m.c0}),React.createElement('stop',{offset:'100%',stopColor:m.c1})); });
+    const extra=[
+      React.createElement('radialGradient',{key:'gc',id:'g_center',gradientUnits:'userSpaceOnUse',cx,cy,r:R0},React.createElement('stop',{offset:'0%',stopColor:P.centerC0}),React.createElement('stop',{offset:'100%',stopColor:P.centerC1})),
+      React.createElement('filter',{key:'glow',id:'segGlow',x:'-40%',y:'-40%',width:'180%',height:'180%'},React.createElement('feDropShadow',{dx:0,dy:0,stdDeviation:5,floodColor:'#ffffff',floodOpacity:0.3})),
+    ];
+    const defs=React.createElement('defs',null,gradDefs.concat(extra));
+    const paths=arcs.map(a=>{
+      let a0=a.a0,a1=a.a1; if(a1-a0<0.004) return null;
+      if(a1-a0>Math.PI*2-0.002) a1=a0+Math.PI*2-0.002;
+      const type=a.node.children?a.node._dom:a.node.type;
+      const rIn=R0+(a.depth-1)*ringW+1.5, rOut=R0+a.depth*ringW-1.5;
+      const isHover=hoverId===a.node.id;
+      const mid=(a0+a1)/2, dx=isHover?Math.sin(mid)*5:0, dy=isHover?-Math.cos(mid)*5:0;
+      const dim=hoverId&&!isHover?0.5:1;
+      return React.createElement('path',{key:a.node.id,d:this.arc(cx,cy,rIn,rOut,a0,a1),fill:'url(#g_'+type+')',stroke:P.gap,strokeWidth:1.6,strokeLinejoin:'round',opacity:dim,filter:isHover?'url(#segGlow)':'none',transform:'translate('+dx+' '+dy+')',style:{cursor:'pointer',transition:'opacity .18s ease,transform .18s ease'},onMouseEnter:e=>this.setState({hoverId:a.node.id,hx:e.clientX,hy:e.clientY}),onMouseMove:e=>this.setState({hx:e.clientX,hy:e.clientY}),onMouseLeave:()=>this.setState({hoverId:null}),onClick:()=>this.onSeg(a.node)});
+    }).filter(Boolean);
+    let selPath=null; const selArc=arcs.find(a=>a.node.id===selId);
+    if(selArc){ let a0=selArc.a0,a1=selArc.a1; if(a1-a0>Math.PI*2-0.002)a1=a0+Math.PI*2-0.002; if(a1-a0>=0.004){ const rIn=R0+(selArc.depth-1)*ringW+1.5,rOut=R0+selArc.depth*ringW-1.5; selPath=React.createElement('path',{key:'sel',d:this.arc(cx,cy,rIn,rOut,a0,a1),fill:'none',stroke:P.tileSel,strokeWidth:2,strokeOpacity:0.92,strokeLinejoin:'round',pointerEvents:'none'}); } }
+    const center=React.createElement('circle',{key:'c',cx,cy,r:R0-6,fill:'url(#g_center)',stroke:P.border,strokeWidth:1});
+    const svg=React.createElement('svg',{viewBox:'0 0 720 720',style:{width:'100%',height:'100%',display:'block',overflow:'visible'}},defs,React.createElement('g',{key:current.id,style:{transformBox:'view-box',transformOrigin:'360px 360px',animation:'sbIn .42s cubic-bezier(.22,1,.36,1)'}},paths.concat(selPath?[selPath]:[])),center);
+    const canUp=!!current.parent;
+    const label=React.createElement('div',{style:{position:'absolute',left:'50%',top:'50%',transform:'translate(-50%,-50%)',width:150,textAlign:'center',cursor:canUp?'pointer':'default',userSelect:'none'},onClick:canUp?()=>this.onCenter():undefined},
+      canUp?React.createElement('div',{key:'b',style:{fontSize:12,color:P.labelBack,display:'flex',gap:3,justifyContent:'center',alignItems:'center',marginBottom:1}},React.createElement('span',{style:{fontSize:15,lineHeight:1}},'‹'),'Back'):null,
+      React.createElement('div',{key:'n',style:{fontSize:13,color:P.labelName,fontWeight:590,maxWidth:142,margin:'0 auto',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},current.name),
+      React.createElement('div',{key:'s',style:{fontSize:25,fontWeight:680,letterSpacing:'-0.02em',margin:'2px 0',fontFamily:this.MONO,color:P.labelBig}},this.fmt(current.size)),
+      React.createElement('div',{key:'f',style:{fontSize:11.5,color:P.labelSub}},current._files.toLocaleString()+' items'));
+    const empty=arcs.length?null:React.createElement('div',{style:{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:14,color:P.emptyText,pointerEvents:'none'}},React.createElement('div',{style:{width:60,height:60,borderRadius:16,border:'2px dashed '+P.emptyBorder}}),React.createElement('div',{style:{fontSize:14}},'This folder is empty'));
+    return React.createElement('div',{style:{flex:1,minHeight:0,width:'100%',display:'flex',alignItems:'center',justifyContent:'center',padding:24,boxSizing:'border-box'}},
+      React.createElement('div',{style:{position:'relative',aspectRatio:'1 / 1',height:'min(94%,660px)',maxWidth:'100%'}},svg,label,empty),
+      this.tooltip());
+  }
+
+  squarify(kids,x,y,w,h){
+    const total=kids.reduce((s,n)=>s+n.size,0)||1; const scale=(w*h)/total;
+    let items=kids.map(n=>({node:n,area:n.size*scale})).sort((a,b)=>b.area-a.area);
+    const res=[]; let rx=x,ry=y,rw=w,rh=h; let row=[];
+    const worst=(r,len)=>{ let sum=0,mn=Infinity,mx=0; for(const it of r){sum+=it.area;if(it.area<mn)mn=it.area;if(it.area>mx)mx=it.area;} const s2=sum*sum,l2=len*len; return Math.max((l2*mx)/s2,s2/(l2*mn)); };
+    const layout=()=>{ const sum=row.reduce((s,it)=>s+it.area,0); if(rw>=rh){ const cw=sum/rh; let yy=ry; for(const it of row){const hh=it.area/cw; res.push({node:it.node,x:rx,y:yy,w:cw,h:hh}); yy+=hh;} rx+=cw; rw-=cw; } else { const rhh=sum/rw; let xx=rx; for(const it of row){const ww=it.area/rhh; res.push({node:it.node,x:xx,y:ry,w:ww,h:rhh}); xx+=ww;} ry+=rhh; rh-=rhh; } row=[]; };
+    let i=0;
+    while(i<items.length){ const it=items[i]; const len=Math.min(rw,rh)||1; if(row.length===0){row.push(it);i++;continue;} if(worst(row,len)>=worst(row.concat([it]),len)){row.push(it);i++;} else {layout();} }
+    if(row.length) layout();
+    return res;
+  }
+  buildTreemap(){
+    const {current,selId}=this.state; if(!current) return null;
+    const P=this._P;
+    const kids=(current.children||[]).filter(c=>c.size>0);
+    const wrap=(inner)=>React.createElement('div',{style:{flex:1,minHeight:0,width:'100%',display:'flex',alignItems:'center',justifyContent:'center',padding:24,boxSizing:'border-box'}},inner,this.tooltip());
+    if(!kids.length) return wrap(React.createElement('div',{style:{display:'flex',flexDirection:'column',alignItems:'center',gap:14,color:P.emptyText}},React.createElement('div',{style:{width:60,height:60,borderRadius:16,border:'2px dashed '+P.emptyBorder}}),React.createElement('div',{style:{fontSize:14}},'This folder is empty')));
+    const W=1000,H=620; const rects=this.squarify(kids,0,0,W,H);
+    const cells=rects.map(r=>{
+      const type=r.node.children?r.node._dom:r.node.type; const m=this.TYPES[type];
+      const show=r.w>96&&r.h>38; const isSel=selId===r.node.id;
+      return React.createElement('div',{key:r.node.id,onClick:()=>this.onSeg(r.node),onMouseEnter:e=>this.setState({hoverId:r.node.id,hx:e.clientX,hy:e.clientY}),onMouseMove:e=>this.setState({hx:e.clientX,hy:e.clientY}),onMouseLeave:()=>this.setState({hoverId:null}),style:{position:'absolute',left:(r.x/W*100)+'%',top:(r.y/H*100)+'%',width:(r.w/W*100)+'%',height:(r.h/H*100)+'%',background:'linear-gradient(150deg,'+m.c0+','+m.c1+')',border:'1.5px solid '+P.gap,borderRadius:8,boxSizing:'border-box',boxShadow:isSel?'inset 0 0 0 2px '+P.tileSel:'inset 0 1px 0 '+P.tileHi,padding:'8px 10px',overflow:'hidden',cursor:'pointer',color:'#fff',transition:'box-shadow .15s'}},
+        show?React.createElement('div',{key:'n',style:{fontSize:12.5,fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',textShadow:'0 1px 2px rgba(0,0,0,.4)'}},r.node.name):null,
+        show?React.createElement('div',{key:'s',style:{fontSize:11,opacity:.9,fontFamily:this.MONO,textShadow:'0 1px 2px rgba(0,0,0,.4)'}},this.fmt(r.node.size)):null);
+    });
+    return wrap(React.createElement('div',{style:{position:'relative',width:'100%',maxWidth:920,aspectRatio:'1000 / 620',maxHeight:'100%'}},cells));
+  }
+
+  buildTree(){
+    const root=this.state.root; if(!root) return null;
+    const P=this._P;
+    const {selId,current,expanded}=this.state; const rows=[];
+    const walk=(n,depth)=>{
+      const isFolder=!!n.children; const isExp=expanded.has(n.id); const isSel=selId===n.id; const isCur=current&&current.id===n.id;
+      const type=isFolder?n._dom:n.type; const m=this.TYPES[type];
+      rows.push(React.createElement('div',{key:n.id,onClick:()=>this.onTree(n),onMouseEnter:e=>{if(!isSel)e.currentTarget.style.background=P.treeHover;},onMouseLeave:e=>{if(!isSel)e.currentTarget.style.background=isCur?P.treeCur:'transparent';},style:{display:'flex',alignItems:'center',gap:6,height:27,paddingLeft:(depth*13+8)+'px',paddingRight:8,borderRadius:6,cursor:'pointer',background:isSel?P.treeSel:(isCur?P.treeCur:'transparent'),color:isSel?P.treeSelText:P.treeText,fontSize:13,userSelect:'none'}},
+        React.createElement('span',{key:'t',onClick:e=>{e.stopPropagation();if(isFolder)this.toggle(n.id);},style:{width:14,flex:'0 0 auto',textAlign:'center',fontSize:9,color:P.disc,transform:isExp?'rotate(90deg)':'none',transition:'transform .15s',visibility:isFolder?'visible':'hidden'}},'▶'),
+        React.createElement('span',{key:'d',style:{width:9,height:9,borderRadius:isFolder?3:'50%',flex:'0 0 auto',background:'linear-gradient(135deg,'+m.c0+','+m.c1+')'}}),
+        React.createElement('span',{key:'l',style:{flex:1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},n.name),
+        React.createElement('span',{key:'s',style:{fontSize:11,color:P.treeSize,fontFamily:this.MONO}},this.fmt(n.size))));
+      if(isFolder&&isExp) n.children.forEach(c=>walk(c,depth+1));
+    };
+    walk(root,0);
+    return React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:1,padding:'4px 6px'}},rows);
+  }
+
+  buildLegend(){
+    const order=['video','image','document','archive','app','audio','code','system'];
+    const P=this._P;
+    return React.createElement('div',{style:{display:'flex',flexWrap:'wrap',gap:'7px 18px',alignItems:'center'}},order.map(t=>{ const m=this.TYPES[t]; return React.createElement('div',{key:t,style:{display:'flex',alignItems:'center',gap:7,fontSize:12,color:P.legend}},React.createElement('span',{style:{width:11,height:11,borderRadius:3.5,background:'linear-gradient(135deg,'+m.c0+','+m.c1+')'}}),m.label); }));
+  }
+  buildCrumbs(){
+    const cur=this.state.current; if(!cur) return null;
+    const P=this._P;
+    const chain=[]; let x=cur; while(x){chain.unshift(x);x=x.parent;}
+    const items=[];
+    chain.forEach((n,i)=>{ const last=i===chain.length-1;
+      items.push(React.createElement('span',{key:n.id,onClick:()=>this.onCrumb(n),onMouseEnter:e=>{if(!last)e.currentTarget.style.color=P.crumbHover;},onMouseLeave:e=>{if(!last)e.currentTarget.style.color=P.crumb;},style:{cursor:'pointer',color:last?P.crumbLast:P.crumb,fontWeight:last?600:500,fontSize:13,whiteSpace:'nowrap'}},n.name));
+      if(!last) items.push(React.createElement('span',{key:n.id+'s',style:{color:P.crumbSep,fontSize:12,padding:'0 1px'}},'›'));
+    });
+    return React.createElement('div',{style:{display:'flex',alignItems:'center',gap:4,flexWrap:'wrap'}},items);
+  }
+  buildToggle(){
+    const P=this._P; const sb=this.state.view==='sunburst';
+    const btn=(label,active,on)=>React.createElement('button',{onClick:on,style:{border:'none',padding:'6px 15px',borderRadius:7,fontSize:12.5,fontWeight:560,cursor:'pointer',background:active?P.toggleActiveBg:'transparent',color:active?P.toggleActiveText:P.toggleText,boxShadow:active&&(this.props&&this.props.theme==='light')?'0 1px 2px rgba(0,0,0,0.12)':'none',transition:'all .15s'}},label);
+    return React.createElement('div',{style:{display:'flex',gap:2,padding:3,background:P.searchBg,borderRadius:9,border:'1px solid '+P.searchBorder,flex:'0 0 auto'}},btn('Sunburst',sb,()=>this.setState({view:'sunburst'})),btn('Treemap',!sb,()=>this.setState({view:'treemap'})));
+  }
+
+  selInfo(){
+    const s=this.state.sel; if(!s) return null;
+    const meta=this.TYPES[s.children?s._dom:s.type]||this.TYPES.system;
+    const kind=s.children?'Folder':((this.TYPES[s.type]&&this.TYPES[s.type].label.replace(/s$/,''))||'File');
+    const p=s.parent; const pct=p?(s.size/p.size*100):100;
+    return { name:s.name, kind, path:s.path, sizeLabel:this.fmt(s.size), pctLabel:p?pct.toFixed(1)+'% of '+p.name:'Volume root', fileCountLabel:s.children?(s._files.toLocaleString()+' items'):'Single file', modified:this.fmtDate(s._mod), badgeBg:'linear-gradient(135deg,'+meta.c0+','+meta.c1+')' };
+  }
+
+  themeVarsStr(){
+    const P=this._P;
+    const keys=['bg','text','title','panel','panelBar','bottomBar','border','hair','hair2','label','muted','muted2','name','kind','value','big','path','searchBg','searchBorder','searchText','btnBg','btnBorder','btnBgHover','overlayBg','scanRing','scanText','scanSub','scanTrack','toastBg','toastBorder','toastText'];
+    return keys.map(k=>'--'+k+':'+P[k]).join(';');
+  }
+
+  renderVals(){
+    const st=this.state; const ready=!!st.root;
+    this._P=this.pal();
+    return {
+      loading:st.loading,
+      themeVars:this.themeVarsStr(),
+      viewEl: ready?(st.view==='sunburst'?this.buildStage():this.buildTreemap()):null,
+      treeEl:this.buildTree(),
+      legendEl:this.buildLegend(),
+      crumbEl:this.buildCrumbs(),
+      toggleEl:this.buildToggle(),
+      sel:this.selInfo(),
+      toast:st.toast,
+      showToast:!!st.toast,
+      reveal:()=>this.act('reveal'),
+    };
+  }
+  act(kind){ const s=this.state.sel; if(!s) return; if(kind==='reveal') this.toast('Revealing “'+s.name+'” in Finder'); }
+  toast(msg){ this.setState({toast:msg}); clearTimeout(this._tt); this._tt=setTimeout(()=>this.setState({toast:null}),2600); }
+}
+</script>
+</body>
+</html>
