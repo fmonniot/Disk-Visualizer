@@ -54,7 +54,7 @@ struct Disk_VisualizerTests {
         try Data(count: 8192).write(to: sub.appendingPathComponent("b.mov"))
         try Data(count: 4096).write(to: sub.appendingPathComponent("c.mov"))
 
-        let tree = try DiskScanner.scan(url: root)
+        let tree = try DiskScanner.scan(url: root).root
 
         #expect(tree.isDirectory)
         #expect(tree.fileCount == 3)
@@ -91,7 +91,7 @@ struct Disk_VisualizerTests {
         }
         try build(root, depth: 0)
 
-        let tree = try DiskScanner.scan(url: root)
+        let tree = try DiskScanner.scan(url: root).root
 
         #expect(tree.fileCount == expectedFiles)
         // Recompute size/count from the tree and check internal consistency.
@@ -116,7 +116,7 @@ struct Disk_VisualizerTests {
         try Data(count: 65536).write(to: root.appendingPathComponent("large.bin"))
         try Data(count: 16384).write(to: root.appendingPathComponent("medium.bin"))
 
-        let tree = try DiskScanner.scan(url: root)
+        let tree = try DiskScanner.scan(url: root).root
         let sizes = tree.children.map(\.size)
         #expect(sizes == sizes.sorted(by: >))
         #expect(tree.children.first?.name == "large.bin")
@@ -136,7 +136,7 @@ struct Disk_VisualizerTests {
         try fm.createDirectory(at: inner, withIntermediateDirectories: true)
         try Data(count: 4096).write(to: inner.appendingPathComponent("payload.bin"))
 
-        let tree = try DiskScanner.scan(url: root)
+        let tree = try DiskScanner.scan(url: root).root
         let app = try #require(tree.children.first { $0.name == "Thing.app" })
 
         #expect(app.isDirectory)
@@ -162,12 +162,35 @@ struct Disk_VisualizerTests {
         try Data(count: 4096).write(to: keep.appendingPathComponent("in.bin"))
         try Data(count: 8192).write(to: drop.appendingPathComponent("in.bin"))
 
-        let tree = try DiskScanner.scan(url: root, excluded: [drop.path])
+        let tree = try DiskScanner.scan(url: root, excluded: [drop.path]).root
 
         #expect(tree.children.count == 1)
         #expect(tree.children.first?.name == "keep")
         // The excluded subtree contributes nothing to the totals.
         #expect(tree.children.contains { $0.name == "drop" } == false)
+    }
+
+    /// Directories that can't be opened for permission reasons are skipped and
+    /// counted, so the UI can warn that totals are incomplete.
+    @Test func scannerCountsUnreadableDirectories() throws {
+        let fm = FileManager.default
+        let root = fm.temporaryDirectory
+            .appendingPathComponent("dv-test-\(UUID().uuidString)", isDirectory: true)
+        try fm.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: root) }
+
+        let locked = root.appendingPathComponent("locked", isDirectory: true)
+        try fm.createDirectory(at: locked, withIntermediateDirectories: true)
+        try Data(count: 4096).write(to: root.appendingPathComponent("readable.bin"))
+
+        // Remove all permissions so the scanner's open() fails with EACCES.
+        try fm.setAttributes([.posixPermissions: 0], ofItemAtPath: locked.path)
+        // Restore before teardown so the tree can be deleted (LIFO: runs first).
+        defer { try? fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: locked.path) }
+
+        let result = try DiskScanner.scan(url: root)
+        #expect(result.unreadableDirectories >= 1)
+        #expect(result.root.children.contains { $0.name == "readable.bin" })
     }
 
     /// Symlinks are treated as leaves and never followed.
@@ -187,7 +210,7 @@ struct Disk_VisualizerTests {
             withDestinationURL: target
         )
 
-        let tree = try DiskScanner.scan(url: root)
+        let tree = try DiskScanner.scan(url: root).root
         let link = try #require(tree.children.first { $0.name == "link" })
 
         #expect(link.isLeaf)             // not recursed into the target

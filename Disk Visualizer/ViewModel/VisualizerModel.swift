@@ -38,6 +38,10 @@ final class VisualizerModel {
     var viewMode: ViewMode = .sunburst
     private(set) var scannedURL: URL?
 
+    /// Number of directories skipped for permission reasons in the last scan.
+    /// Non-zero means the totals undercount protected locations.
+    private(set) var unreadableDirectories = 0
+
     /// Drives the folder importer sheet (toggled by the toolbar and ⌘O).
     var isPresentingImporter = false
     /// Transient confirmation message shown as a toast.
@@ -58,12 +62,13 @@ final class VisualizerModel {
         current = nil
         selection = nil
         expanded = []
+        unreadableDirectories = 0
 
         scanTask = Task {
             let granted = url.startAccessingSecurityScopedResource()
             defer { if granted { url.stopAccessingSecurityScopedResource() } }
 
-            let result: Result<FileNode, Error> = await Task.detached(priority: .userInitiated) {
+            let result: Result<DiskScanner.ScanResult, Error> = await Task.detached(priority: .userInitiated) {
                 do { return .success(try DiskScanner.scan(url: url)) }
                 catch { return .failure(error) }
             }.value
@@ -71,8 +76,8 @@ final class VisualizerModel {
             if Task.isCancelled { return }
 
             switch result {
-            case .success(let tree):
-                apply(tree)
+            case .success(let scan):
+                apply(scan)
             case .failure(is DiskScanner.Cancelled):
                 return
             case .failure(let error):
@@ -87,11 +92,13 @@ final class VisualizerModel {
         if phase == .scanning { phase = .idle }
     }
 
-    private func apply(_ tree: FileNode) {
+    private func apply(_ scan: DiskScanner.ScanResult) {
+        let tree = scan.root
         root = tree
         current = tree
         selection = tree
         expanded = initialExpansion(for: tree)
+        unreadableDirectories = scan.unreadableDirectories
         phase = .loaded
     }
 

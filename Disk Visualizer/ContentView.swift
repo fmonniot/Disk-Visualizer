@@ -12,6 +12,9 @@ struct ContentView: View {
     @Environment(VisualizerModel.self) private var model
     @Environment(\.colorScheme) private var colorScheme
 
+    /// Whether the user dismissed the incomplete-results banner for this scan.
+    @State private var warningDismissed = false
+
     private var theme: Theme { colorScheme == .light ? .light : .dark }
 
     var body: some View {
@@ -76,7 +79,24 @@ struct ContentView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
+        .overlay(alignment: .top) {
+            if showIncompleteWarning {
+                IncompleteResultsBanner(
+                    count: model.unreadableDirectories,
+                    onDismiss: { warningDismissed = true }
+                )
+                .padding(.top, 52)
+                .padding(.horizontal, 16)
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .onChange(of: model.scannedURL) { warningDismissed = false }
         .animation(.easeOut(duration: 0.28), value: model.toast)
+        .animation(.easeOut(duration: 0.28), value: showIncompleteWarning)
+    }
+
+    private var showIncompleteWarning: Bool {
+        model.phase == .loaded && model.unreadableDirectories > 0 && !warningDismissed
     }
 
     private var windowTitle: String {
@@ -113,6 +133,59 @@ private struct WelcomeView: View {
             }
             .frame(width: geo.size.width, height: geo.size.height)
         }
+    }
+}
+
+/// Shown after a scan that skipped protected/unreadable directories, warning
+/// that the totals undercount. Dismissible.
+private struct IncompleteResultsBanner: View {
+    @Environment(\.theme) private var theme
+    let count: Int
+    var onDismiss: () -> Void
+
+    private var headline: String {
+        count == 1
+            ? "1 folder couldn’t be read and was skipped"
+            : "\(count.formatted()) folders couldn’t be read and were skipped"
+    }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 13))
+                .foregroundStyle(.orange)
+                .padding(.top, 1)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(headline)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(theme.toastText)
+                Text("Totals may be incomplete. Granting Full Disk Access in System Settings lets the scan read protected locations.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(theme.muted2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 8)
+            Button(action: onDismiss) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(theme.muted2)
+                    .padding(4)
+            }
+            .buttonStyle(.plain)
+            .help("Dismiss")
+        }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 12)
+        .frame(maxWidth: 520)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(theme.toastBg)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(theme.toastBorder)
+        )
+        .shadow(color: .black.opacity(0.25), radius: 14, y: 6)
     }
 }
 

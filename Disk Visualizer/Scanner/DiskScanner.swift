@@ -25,6 +25,16 @@ import Darwin
 nonisolated enum DiskScanner {
     struct Cancelled: Error {}
 
+    /// The outcome of a scan: the tree plus how much of it we couldn't read.
+    struct ScanResult: Sendable {
+        let root: FileNode
+        /// Directories skipped because they couldn't be opened for permission
+        /// reasons (TCC-protected locations, other users' data). When non-zero
+        /// the totals undercount — surfaced to the user as an incomplete-results
+        /// warning.
+        let unreadableDirectories: Int
+    }
+
     /// Directory extensions we present as a single opaque item (their contents
     /// are summed for size but not exposed as navigable children).
     private static let opaqueExtensions: Set<String> = [
@@ -47,7 +57,7 @@ nonisolated enum DiskScanner {
         url: URL,
         isCancelled: @escaping @Sendable () -> Bool = { Task.isCancelled },
         excluded: Set<String>? = nil
-    ) throws -> FileNode {
+    ) throws -> ScanResult {
         let path = url.path
         let name = url.lastPathComponent.isEmpty ? url.path : url.lastPathComponent
 
@@ -56,11 +66,12 @@ nonisolated enum DiskScanner {
         guard lstat(path, &st) == 0 else {
             // Unreadable root: mirror the old scanner's "skip" behaviour with an
             // empty leaf rather than failing the whole scan.
-            return FileNode(
+            let leaf = FileNode(
                 name: name, rootURL: url, isDirectory: false, size: 0,
                 modified: Date(), category: FileCategory.forFile(extension: url.pathExtension),
                 fileCount: 1, children: []
             )
+            return ScanResult(root: leaf, unreadableDirectories: 0)
         }
 
         let format = st.st_mode & S_IFMT
@@ -76,11 +87,12 @@ nonisolated enum DiskScanner {
             let size = (isDirectory && !isSymlink)
                 ? directorySize(path)
                 : Int64(st.st_blocks) * 512
-            return FileNode(
+            let leaf = FileNode(
                 name: name, rootURL: url, isDirectory: isDirectory, size: size,
                 modified: modified, category: FileCategory.forFile(extension: url.pathExtension),
                 fileCount: 1, children: []
             )
+            return ScanResult(root: leaf, unreadableDirectories: 0)
         }
 
         // A regular directory: drive the parallel walk. When the root is a
@@ -96,10 +108,11 @@ nonisolated enum DiskScanner {
         coordinator.run()
 
         if coordinator.wasCancelled { throw Cancelled() }
-        return coordinator.rootResult ?? FileNode(
+        let tree = coordinator.rootResult ?? FileNode(
             name: name, rootURL: url, isDirectory: true, size: 0, modified: modified,
             category: .folder, fileCount: 0, children: []
         )
+        return ScanResult(root: tree, unreadableDirectories: coordinator.unreadableDirectories)
     }
 
     // MARK: - Reading one directory
@@ -109,11 +122,11 @@ nonisolated enum DiskScanner {
     /// syscalls run in parallel across workers.
     fileprivate static func readDirectory(
         path: String, parent: Builder, excluding excluded: Set<String>
-    ) -> (leaves: [FileNode], subdirs: [(Builder, String)]) {
+    ) -> (leaves: [FileNode], subdirs: [(Builder, String)], permissionDenied: Bool) {
         var leaves: [FileNode] = []
         var subdirs: [(Builder, String)] = []
 
-        enumerateDirectory(path: path) { name, objType, modified, size in
+        let err = enumerateDirectory(path: path) { name, objType, modified, size in
             let childPath = join(path, name)
             if objType == objTypeDir {
                 // A firmlink/system mount or a nested volume: not part of this
@@ -144,7 +157,7 @@ nonisolated enum DiskScanner {
                 ))
             }
         }
-        return (leaves, subdirs)
+        return (leaves, subdirs, permissionDenied: err == EACCES || err == EPERM)
     }
 
     /// Builds the finished `FileNode` for a directory whose children are all
@@ -217,12 +230,15 @@ nonisolated enum DiskScanner {
 
     /// Opens `path` and invokes `body` once per entry. Unreadable directories
     /// (permissions, races) are silently skipped, matching the old scanner.
+    /// Returns the `open` errno (0 on success) so callers can distinguish a
+    /// permission denial from an empty directory.
+    @discardableResult
     private static func enumerateDirectory(
         path: String,
         _ body: (_ name: String, _ objType: UInt32, _ modified: Date, _ size: Int64) -> Void
-    ) {
+    ) -> Int32 {
         let fd = open(path, O_RDONLY | O_DIRECTORY)
-        guard fd >= 0 else { return }
+        guard fd >= 0 else { return errno }
         defer { close(fd) }
 
         var attrList = attrlist()
@@ -233,7 +249,7 @@ nonisolated enum DiskScanner {
         let bufSize = 64 * 1024
         let buf = UnsafeMutableRawBufferPointer.allocate(byteCount: bufSize, alignment: 8)
         defer { buf.deallocate() }
-        guard let base = buf.baseAddress else { return }
+        guard let base = buf.baseAddress else { return 0 }
 
         while true {
             let count = getattrlistbulk(fd, &attrList, base, bufSize, fsOptPackInvalAttrs)
@@ -257,6 +273,7 @@ nonisolated enum DiskScanner {
                 offset += Int(length)
             }
         }
+        return 0
     }
 
     // MARK: - Helpers
@@ -373,6 +390,7 @@ private nonisolated final class ScanCoordinator: @unchecked Sendable {
     private var stack: [(Builder, String)] = []
     private var inFlight = 0
     private var cancelled = false
+    private var unreadable = 0
     private(set) var rootResult: FileNode?
 
     private let isCancelled: @Sendable () -> Bool
@@ -386,6 +404,12 @@ private nonisolated final class ScanCoordinator: @unchecked Sendable {
     var wasCancelled: Bool {
         cond.lock(); defer { cond.unlock() }
         return cancelled
+    }
+
+    /// Count of directories skipped for permission reasons. Read after `run()`.
+    var unreadableDirectories: Int {
+        cond.lock(); defer { cond.unlock() }
+        return unreadable
     }
 
     func push(_ builder: Builder, _ path: String) {
@@ -404,8 +428,9 @@ private nonisolated final class ScanCoordinator: @unchecked Sendable {
 
     private func workerLoop() {
         while let (builder, path) = nextWork() {
-            let (leaves, subdirs) = DiskScanner.readDirectory(path: path, parent: builder, excluding: excluded)
-            completeRead(builder, leaves: leaves, subdirs: subdirs)
+            let (leaves, subdirs, permissionDenied) =
+                DiskScanner.readDirectory(path: path, parent: builder, excluding: excluded)
+            completeRead(builder, leaves: leaves, subdirs: subdirs, permissionDenied: permissionDenied)
         }
     }
 
@@ -436,11 +461,14 @@ private nonisolated final class ScanCoordinator: @unchecked Sendable {
 
     /// Records the result of reading one directory: attaches its leaves, queues
     /// its subdirectories, and — if it had none — begins finalizing it.
-    private func completeRead(_ builder: Builder, leaves: [FileNode], subdirs: [(Builder, String)]) {
+    private func completeRead(
+        _ builder: Builder, leaves: [FileNode], subdirs: [(Builder, String)], permissionDenied: Bool
+    ) {
         cond.lock()
         builder.children.append(contentsOf: leaves)
         builder.pending = subdirs.count
         for work in subdirs { stack.append(work) }
+        if permissionDenied { unreadable += 1 }
         inFlight -= 1
         let readyToFinalize = builder.pending == 0
         cond.broadcast()
