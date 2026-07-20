@@ -88,6 +88,27 @@ struct Disk_VisualizerTests {
         }
     }
 
+    @MainActor
+    @Test func sunburstHitTestingFindsArcUnderCursor() {
+        let root = Self.folder("root", children: [
+            Self.file("big", .video, 800),   // spans angle 0 ..< 0.8·2π from the top
+            Self.file("small", .image, 200),
+        ])
+        let arcs = SunburstLayout.arcs(for: root)
+
+        // A point straight up, in the first ring, lands in "big".
+        let r = SunburstLayout.innerRadius + SunburstLayout.ringWidth / 2
+        let top = CGPoint(x: SunburstLayout.center.x, y: SunburstLayout.center.y - r)
+        #expect(SunburstView.arc(at: top, scale: 1, in: arcs)?.node.name == "big")
+
+        // The center (inside the inner radius) matches no arc.
+        #expect(SunburstView.arc(at: SunburstLayout.center, scale: 1, in: arcs) == nil)
+
+        // Beyond the outermost ring matches no arc.
+        let far = CGPoint(x: SunburstLayout.center.x, y: 0)
+        #expect(SunburstView.arc(at: far, scale: 1, in: arcs) == nil)
+    }
+
     // MARK: - Treemap layout.
 
     @Test func treemapTilesCoverArea() {
