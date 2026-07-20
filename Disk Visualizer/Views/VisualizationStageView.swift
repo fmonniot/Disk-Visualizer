@@ -19,7 +19,9 @@ struct VisualizationStageView: View {
                 theme.backgroundGradient(diameter: max(geo.size.width, geo.size.height) * 1.2)
 
                 switch model.viewMode {
-                case .sunburst, .treemap:
+                case .sunburst:
+                    SunburstView()
+                case .treemap:
                     placeholder
                 }
             }
