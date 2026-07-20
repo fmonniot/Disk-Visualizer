@@ -27,6 +27,9 @@
 		28A80191300D975B000E12A7 /* Disk Visualizer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Disk Visualizer.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		28A801A0300D975C000E12A7 /* Disk VisualizerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Disk VisualizerTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		28A801AA300D975C000E12A7 /* Disk VisualizerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Disk VisualizerUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		28A801C6300D9817000E12A7 /* DiskBloom.dc.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = DiskBloom.dc.html; sourceTree = "<group>"; };
+		28A801C7300D9817000E12A7 /* support.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = support.js; sourceTree = "<group>"; };
+		28A801C9300D9817000E12A7 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -75,6 +78,7 @@
 		28A80188300D975B000E12A7 = {
 			isa = PBXGroup;
 			children = (
+				28A801CB300D9817000E12A7 /* docs */,
 				28A80193300D975B000E12A7 /* Disk Visualizer */,
 				28A801A3300D975C000E12A7 /* Disk VisualizerTests */,
 				28A801AD300D975C000E12A7 /* Disk VisualizerUITests */,
@@ -90,6 +94,24 @@
 				28A801AA300D975C000E12A7 /* Disk VisualizerUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		28A801CA300D9817000E12A7 /* design */ = {
+			isa = PBXGroup;
+			children = (
+				28A801C9300D9817000E12A7 /* README.md */,
+				28A801C6300D9817000E12A7 /* DiskBloom.dc.html */,
+				28A801C7300D9817000E12A7 /* support.js */,
+			);
+			path = design;
+			sourceTree = "<group>";
+		};
+		28A801CB300D9817000E12A7 /* docs */ = {
+			isa = PBXGroup;
+			children = (
+				28A801CA300D9817000E12A7 /* design */,
+			);
+			path = docs;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

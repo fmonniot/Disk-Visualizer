@@ -6,54 +6,107 @@
 //
 
 import SwiftUI
-import SwiftData
+import UniformTypeIdentifiers
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    @Environment(VisualizerModel.self) private var model
+    @State private var showImporter = false
 
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
-                }
-                .onDelete(perform: deleteItems)
+        Group {
+            switch model.phase {
+            case .idle:
+                emptyState
+            case .scanning:
+                scanningState
+            case .loaded:
+                loadedState
+            case .failed(let message):
+                failureState(message)
             }
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
-            .toolbar {
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
+        }
+        .frame(minWidth: 720, minHeight: 480)
+        .fileImporter(
+            isPresented: $showImporter,
+            allowedContentTypes: [.folder],
+            allowsMultipleSelection: false
+        ) { result in
+            if case .success(let urls) = result, let url = urls.first {
+                model.scan(url: url)
             }
-        } detail: {
-            Text("Select an item")
         }
     }
 
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
+    private var emptyState: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "chart.pie")
+                .font(.system(size: 44, weight: .light))
+                .foregroundStyle(.secondary)
+            Text("Disk Visualizer")
+                .font(.title2.weight(.semibold))
+            Text("Choose a folder to scan and visualize how its space is used.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            Button("Choose Folder…") { showImporter = true }
+                .controlSize(.large)
+                .buttonStyle(.borderedProminent)
+        }
+        .padding()
+    }
+
+    private var scanningState: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+            Text("Scanning \(model.scannedURL?.lastPathComponent ?? "…")")
+                .font(.headline)
+            Text("Indexing files and calculating sizes")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            Button("Cancel") { model.cancelScan() }
+        }
+        .padding()
+    }
+
+    private var loadedState: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if let root = model.root {
+                List([root], children: \.childrenOrNil) { node in
+                    HStack {
+                        Image(systemName: node.isDirectory ? "folder.fill" : "doc")
+                            .foregroundStyle(node.category.startColor)
+                        Text(node.name)
+                        Spacer()
+                        Text(ByteFormat.string(node.size))
+                            .font(.system(.body, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+        .toolbar {
+            ToolbarItem {
+                Button("Choose Folder…") { showImporter = true }
+            }
         }
     }
 
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
-            }
+    private func failureState(_ message: String) -> some View {
+        VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 40, weight: .light))
+                .foregroundStyle(.orange)
+            Text("Couldn't scan that folder")
+                .font(.headline)
+            Text(message)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            Button("Choose Folder…") { showImporter = true }
         }
+        .padding()
     }
 }
 
 #Preview {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+        .environment(VisualizerModel())
 }
