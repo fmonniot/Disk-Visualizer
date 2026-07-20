@@ -21,9 +21,19 @@
 
 import Foundation
 import Darwin
+import os
 
 nonisolated enum DiskScanner {
     struct Cancelled: Error {}
+
+    /// Thread-safe scanned-item counter for progress reporting. Workers bump it
+    /// as they read directories; the UI polls `count` on the main actor while
+    /// the scan runs.
+    nonisolated final class ScanProgress: @unchecked Sendable {
+        private let state = OSAllocatedUnfairLock(initialState: 0)
+        func add(_ n: Int) { state.withLock { $0 += n } }
+        var count: Int { state.withLock { $0 } }
+    }
 
     /// The outcome of a scan: the tree plus how much of it we couldn't read.
     struct ScanResult: Sendable {
@@ -53,10 +63,12 @@ nonisolated enum DiskScanner {
     ///   - excluded: directory paths to leave out of the walk. Defaults to the
     ///     firmlink/system and nested-volume mount points below `url`; tests
     ///     inject an explicit set.
+    ///   - progress: optional counter bumped as items are scanned, for live UI.
     static func scan(
         url: URL,
         isCancelled: @escaping @Sendable () -> Bool = { Task.isCancelled },
-        excluded: Set<String>? = nil
+        excluded: Set<String>? = nil,
+        progress: ScanProgress? = nil
     ) throws -> ScanResult {
         let path = url.path
         let name = url.lastPathComponent.isEmpty ? url.path : url.lastPathComponent
@@ -101,7 +113,8 @@ nonisolated enum DiskScanner {
         // external drives) so their bytes aren't crossed into or double-counted.
         let coordinator = ScanCoordinator(
             isCancelled: isCancelled,
-            excluded: excluded ?? excludedMountPoints(under: path)
+            excluded: excluded ?? excludedMountPoints(under: path),
+            progress: progress
         )
         let root = Builder(name: name, ownModified: modified, parent: nil, rootURL: url)
         coordinator.push(root, path)
@@ -395,10 +408,16 @@ private nonisolated final class ScanCoordinator: @unchecked Sendable {
 
     private let isCancelled: @Sendable () -> Bool
     private let excluded: Set<String>
+    private let progress: DiskScanner.ScanProgress?
 
-    init(isCancelled: @escaping @Sendable () -> Bool, excluded: Set<String>) {
+    init(
+        isCancelled: @escaping @Sendable () -> Bool,
+        excluded: Set<String>,
+        progress: DiskScanner.ScanProgress?
+    ) {
         self.isCancelled = isCancelled
         self.excluded = excluded
+        self.progress = progress
     }
 
     var wasCancelled: Bool {
@@ -430,6 +449,7 @@ private nonisolated final class ScanCoordinator: @unchecked Sendable {
         while let (builder, path) = nextWork() {
             let (leaves, subdirs, permissionDenied) =
                 DiskScanner.readDirectory(path: path, parent: builder, excluding: excluded)
+            progress?.add(leaves.count + subdirs.count)
             completeRead(builder, leaves: leaves, subdirs: subdirs, permissionDenied: permissionDenied)
         }
     }

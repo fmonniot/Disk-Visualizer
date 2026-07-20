@@ -11,6 +11,8 @@ import SwiftUI
 struct LoadingOverlayView: View {
     @Environment(\.theme) private var theme
     let name: String
+    /// Live count of items scanned so far (0 before the first sample).
+    var itemCount: Int = 0
 
     @State private var spin = false
     @State private var pulse = false
@@ -26,9 +28,13 @@ struct LoadingOverlayView: View {
                     Text("Scanning \(name)…")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(theme.scanText)
-                    Text("Indexing files and calculating sizes")
+                    Text(itemCount > 0
+                         ? "\(itemCount.formatted()) items scanned"
+                         : "Indexing files and calculating sizes")
                         .font(.system(size: 12.5))
                         .foregroundStyle(theme.scanSub)
+                        .monospacedDigit()
+                        .contentTransition(.numericText())
                 }
                 shimmerBar
             }

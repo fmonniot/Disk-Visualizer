@@ -42,6 +42,9 @@ final class VisualizerModel {
     /// Non-zero means the totals undercount protected locations.
     private(set) var unreadableDirectories = 0
 
+    /// Live count of items seen so far during an in-progress scan.
+    private(set) var scannedItemCount = 0
+
     /// Drives the folder importer sheet (toggled by the toolbar and ⌘O).
     var isPresentingImporter = false
     /// Transient confirmation message shown as a toast.
@@ -63,13 +66,24 @@ final class VisualizerModel {
         selection = nil
         expanded = []
         unreadableDirectories = 0
+        scannedItemCount = 0
 
         scanTask = Task {
             let granted = url.startAccessingSecurityScopedResource()
             defer { if granted { url.stopAccessingSecurityScopedResource() } }
 
+            let progress = DiskScanner.ScanProgress()
+            // Poll the counter on the main actor while the detached scan runs.
+            let poller = Task { @MainActor in
+                while !Task.isCancelled {
+                    scannedItemCount = progress.count
+                    try? await Task.sleep(for: .milliseconds(150))
+                }
+            }
+            defer { poller.cancel() }
+
             let result: Result<DiskScanner.ScanResult, Error> = await Task.detached(priority: .userInitiated) {
-                do { return .success(try DiskScanner.scan(url: url)) }
+                do { return .success(try DiskScanner.scan(url: url, progress: progress)) }
                 catch { return .failure(error) }
             }.value
 

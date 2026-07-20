@@ -21,10 +21,11 @@ it renders the design's search box but does nothing. Make it filter the view:
 
 ## Real scan progress
 
-The scanning overlay (`LoadingOverlayView`) shows an **indeterminate** shimmer
-because `DiskScanner` reports no progress. Improve the feedback:
+**Partly done.** `DiskScanner.scan` now takes a `ScanProgress` counter that its
+workers bump per scanned entry; `VisualizerModel` polls it (~150 ms) into
+`scannedItemCount`, and `LoadingOverlayView` shows a live "N items scanned"
+subtitle. Still indeterminate (no bar). Possible follow-ups:
 
-- Have `DiskScanner` report progress (e.g. count of items scanned, or bytes
-  seen) via a callback, surfaced through `VisualizerModel`.
-- Show a live item count / current path in the overlay subtitle, and/or a
-  determinate bar if a total can be estimated cheaply.
+- Show the current path being scanned, not just a count.
+- A determinate bar if a total can be estimated cheaply (e.g. from a prior
+  scan of the same root, or the volume's file count).

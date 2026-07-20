@@ -58,7 +58,10 @@ struct ContentView: View {
                 ZStack {
                     VisualizationStageView()
                     if model.isScanning {
-                        LoadingOverlayView(name: model.scannedURL?.lastPathComponent ?? "…")
+                        LoadingOverlayView(
+                            name: model.scannedURL?.lastPathComponent ?? "…",
+                            itemCount: model.scannedItemCount
+                        )
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

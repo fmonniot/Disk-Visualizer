@@ -170,6 +170,31 @@ struct Disk_VisualizerTests {
         #expect(tree.children.contains { $0.name == "drop" } == false)
     }
 
+    /// The progress counter is bumped once per scanned entry (every node except
+    /// the root, which is never listed by a parent).
+    @Test func scannerReportsProgress() throws {
+        let fm = FileManager.default
+        let root = fm.temporaryDirectory
+            .appendingPathComponent("dv-test-\(UUID().uuidString)", isDirectory: true)
+        try fm.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: root) }
+
+        let sub = root.appendingPathComponent("sub", isDirectory: true)
+        try fm.createDirectory(at: sub, withIntermediateDirectories: true)
+        try Data(count: 1024).write(to: root.appendingPathComponent("a.bin"))
+        try Data(count: 1024).write(to: sub.appendingPathComponent("b.bin"))
+
+        let progress = DiskScanner.ScanProgress()
+        let tree = try DiskScanner.scan(url: root, progress: progress).root
+
+        // Entries = every node below the root: a.bin, sub, sub/b.bin.
+        func entries(_ node: FileNode) -> Int {
+            node.children.count + node.children.reduce(0) { $0 + entries($1) }
+        }
+        #expect(progress.count == entries(tree))
+        #expect(progress.count == 3)
+    }
+
     /// Directories that can't be opened for permission reasons are skipped and
     /// counted, so the UI can warn that totals are incomplete.
     @Test func scannerCountsUnreadableDirectories() throws {
