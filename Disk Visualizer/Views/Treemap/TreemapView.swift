@@ -23,24 +23,31 @@ struct TreemapView: View {
                 let tiles = TreemapLayout.tiles(for: children, in: content)
 
                 ZStack(alignment: .topLeading) {
-                    if tiles.isEmpty {
-                        EmptyFolderView()
-                            .frame(width: content.width, height: content.height)
-                    } else {
-                        ForEach(tiles) { tile in
-                            TreemapCell(
-                                tile: tile,
-                                isSelected: model.selection?.id == tile.id,
-                                isHovered: hoveredID == tile.id
-                            )
-                            .onHover { inside in
-                                if inside { hoveredID = tile.id }
-                                else if hoveredID == tile.id { hoveredID = nil }
+                    // Tiles are clipped to the stage so they never bleed under
+                    // the surrounding bars.
+                    ZStack(alignment: .topLeading) {
+                        if tiles.isEmpty {
+                            EmptyFolderView()
+                                .frame(width: content.width, height: content.height)
+                        } else {
+                            ForEach(tiles) { tile in
+                                TreemapCell(
+                                    tile: tile,
+                                    isSelected: model.selection?.id == tile.id,
+                                    isHovered: hoveredID == tile.id
+                                )
+                                .onHover { inside in
+                                    if inside { hoveredID = tile.id }
+                                    else if hoveredID == tile.id { hoveredID = nil }
+                                }
+                                .onTapGesture { model.activate(tile.node) }
                             }
-                            .onTapGesture { model.activate(tile.node) }
                         }
                     }
+                    .frame(width: content.width, height: content.height)
+                    .clipped()
 
+                    // Tooltip floats above and is not clipped.
                     if let id = hoveredID, let node = tiles.first(where: { $0.id == id })?.node {
                         TooltipView(node: node)
                             .fixedSize()

@@ -63,6 +63,12 @@ struct ContentView: View {
             }
             BottomBarView()
         }
+        .background {
+            GeometryReader { geo in
+                theme.backgroundGradient(diameter: max(geo.size.width, geo.size.height) * 1.2)
+            }
+            .ignoresSafeArea()
+        }
         .overlay(alignment: .bottom) {
             if let toast = model.toast {
                 ToastView(message: toast)

@@ -34,7 +34,12 @@ struct TooltipView: View {
         .padding(.horizontal, 13)
         .padding(.vertical, 10)
         .frame(minWidth: 150, maxWidth: 250, alignment: .leading)
-        .background(theme.tipBg, in: RoundedRectangle(cornerRadius: 12))
+        .background {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12).fill(.thickMaterial)
+                RoundedRectangle(cornerRadius: 12).fill(theme.tipBg.opacity(0.45))
+            }
+        }
         .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(theme.tipBorder, lineWidth: 1))
         .shadow(color: .black.opacity(0.35), radius: 20, y: 12)
     }

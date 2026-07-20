@@ -17,7 +17,12 @@ struct ToastView: View {
             .foregroundStyle(theme.toastText)
             .padding(.horizontal, 18)
             .padding(.vertical, 11)
-            .background(theme.toastBg, in: RoundedRectangle(cornerRadius: 12))
+            .background {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12).fill(.thickMaterial)
+                    RoundedRectangle(cornerRadius: 12).fill(theme.toastBg.opacity(0.45))
+                }
+            }
             .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(theme.toastBorder, lineWidth: 1))
             .shadow(color: .black.opacity(0.35), radius: 22, y: 14)
     }
