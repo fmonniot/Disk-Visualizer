@@ -49,10 +49,7 @@ struct TreemapView: View {
 
                     // Tooltip floats above and is not clipped.
                     if let id = hoveredID, let node = tiles.first(where: { $0.id == id })?.node {
-                        TooltipView(node: node)
-                            .fixedSize()
-                            .allowsHitTesting(false)
-                            .offset(x: cursor.x + 16, y: cursor.y + 16)
+                        FloatingTooltip(node: node, cursor: cursor, container: content)
                     }
                 }
                 .frame(width: content.width, height: content.height)

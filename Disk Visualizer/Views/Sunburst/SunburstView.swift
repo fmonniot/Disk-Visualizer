@@ -43,7 +43,8 @@ struct SunburstView: View {
                         .position(x: side / 2, y: side / 2)
 
                     if let id = hoveredID, let node = arcs.first(where: { $0.id == id })?.node {
-                        tooltip(node)
+                        FloatingTooltip(node: node, cursor: cursor,
+                                        container: CGSize(width: side, height: side))
                     }
                 }
                 .frame(width: side, height: side)
@@ -201,15 +202,6 @@ struct SunburstView: View {
         .allowsHitTesting(false)
     }
 
-    // MARK: - Tooltip
-
-    private func tooltip(_ node: FileNode) -> some View {
-        TooltipView(node: node)
-            .fixedSize()
-            .allowsHitTesting(false)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .offset(x: cursor.x + 16, y: cursor.y + 16)
-    }
 }
 
 struct EmptyFolderView: View {

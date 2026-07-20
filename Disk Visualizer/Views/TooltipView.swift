@@ -49,3 +49,31 @@ struct TooltipView: View {
         return String(format: "%.1f%% of parent", node.fractionOfParent * 100)
     }
 }
+
+/// A `TooltipView` positioned near the cursor but kept fully inside `container`
+/// (flipping to the other side of the cursor near an edge). Because it stays in
+/// the stage, it never overflows into — and get drawn under — neighboring panes.
+struct FloatingTooltip: View {
+    let node: FileNode
+    let cursor: CGPoint
+    let container: CGSize
+    var gap: CGFloat = 16
+
+    @State private var size: CGSize = .zero
+
+    var body: some View {
+        TooltipView(node: node)
+            .fixedSize()
+            .onGeometryChange(for: CGSize.self) { $0.size } action: { size = $0 }
+            .allowsHitTesting(false)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .offset(x: origin(cursor.x, size.width, container.width),
+                    y: origin(cursor.y, size.height, container.height))
+    }
+
+    private func origin(_ cursorValue: CGFloat, _ length: CGFloat, _ limit: CGFloat) -> CGFloat {
+        var value = cursorValue + gap
+        if value + length > limit { value = cursorValue - gap - length } // flip
+        return max(0, min(value, max(0, limit - length)))                // clamp
+    }
+}
