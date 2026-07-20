@@ -30,7 +30,7 @@ The project sets `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` — **everything is
 
 - `FileNode`, `FileCategory`, `DiskScanner`, `TreemapLayout`, `SunburstLayout` are all marked `nonisolated` so they can run on a background `Task.detached`.
 - `FileNode` is `@unchecked Sendable`: it is built entirely on the background task and **never mutated after construction**, so passing the finished tree back to the main actor is safe. Preserve this invariant — don't add post-construction mutation.
-- `VisualizerModel.scan()` runs `DiskScanner.scan` on a detached user-initiated task, wraps the folder access in `startAccessingSecurityScopedResource()` (the app is sandboxed, `ENABLE_USER_SELECTED_FILES = readonly`), and checks `Task.isCancelled` before applying results.
+- `VisualizerModel.scan()` runs `DiskScanner.scan` on a detached user-initiated task and checks `Task.isCancelled` before applying results. It still wraps folder access in `startAccessingSecurityScopedResource()`, but the app is **not sandboxed** (`ENABLE_APP_SANDBOX = NO`) — a deliberate choice so whole-volume scans can read TCC-protected locations once the user grants the app **Full Disk Access** (no App Store / Developer ID target). The call is a harmless no-op without the sandbox.
 
 ## Architecture
 

@@ -7,6 +7,7 @@
 
 import SwiftUI
 import UniformTypeIdentifiers
+import AppKit
 
 struct ContentView: View {
     @Environment(VisualizerModel.self) private var model
@@ -152,20 +153,29 @@ private struct IncompleteResultsBanner: View {
             : "\(count.formatted()) folders couldn’t be read and were skipped"
     }
 
+    private func openFullDiskAccessSettings() {
+        let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles")!
+        NSWorkspace.shared.open(url)
+    }
+
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 13))
                 .foregroundStyle(.orange)
                 .padding(.top, 1)
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 5) {
                 Text(headline)
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(theme.toastText)
-                Text("Totals may be incomplete. Granting Full Disk Access in System Settings lets the scan read protected locations.")
+                Text("Totals may be incomplete. Grant Disk Visualizer Full Disk Access, then scan again to include protected locations.")
                     .font(.system(size: 11))
                     .foregroundStyle(theme.muted2)
                     .fixedSize(horizontal: false, vertical: true)
+                Button("Open Full Disk Access Settings…", action: openFullDiskAccessSettings)
+                    .font(.system(size: 11, weight: .medium))
+                    .buttonStyle(.plain)
+                    .foregroundStyle(theme.accent)
             }
             Spacer(minLength: 8)
             Button(action: onDismiss) {
