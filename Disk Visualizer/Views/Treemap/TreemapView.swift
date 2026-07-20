@@ -14,14 +14,12 @@ struct TreemapView: View {
 
     @State private var hoveredID: FileNode.ID?
     @State private var cursor: CGPoint = .zero
+    @State private var tiles: [TreemapTile] = []
 
     var body: some View {
         GeometryReader { geo in
             let content = geo.size
             if let current = model.current {
-                let children = current.children.filter { $0.size > 0 }
-                let tiles = TreemapLayout.tiles(for: children, in: content)
-
                 ZStack(alignment: .topLeading) {
                     // Tiles are clipped to the stage so they never bleed under
                     // the surrounding bars.
@@ -58,9 +56,19 @@ struct TreemapView: View {
                     if case .active(let location) = phase { cursor = location }
                 }
                 .animation(.easeInOut(duration: 0.2), value: current.id)
+                .onChange(of: current.id, initial: true) {
+                    tiles = Self.layoutTiles(current, content)
+                }
+                .onChange(of: content, initial: true) {
+                    tiles = Self.layoutTiles(current, content)
+                }
             }
         }
         .padding(24)
+    }
+
+    private static func layoutTiles(_ current: FileNode, _ content: CGSize) -> [TreemapTile] {
+        TreemapLayout.tiles(for: current.children.filter { $0.size > 0 }, in: content)
     }
 }
 

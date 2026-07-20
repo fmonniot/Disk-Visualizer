@@ -17,6 +17,7 @@ struct SunburstView: View {
 
     @State private var hoveredID: FileNode.ID?
     @State private var cursor: CGPoint = .zero
+    @State private var arcs: [SunburstArc] = []
 
     var body: some View {
         GeometryReader { geo in
@@ -24,8 +25,6 @@ struct SunburstView: View {
             let scale = side / 720
 
             if let current = model.current {
-                let arcs = SunburstLayout.arcs(for: current)
-
                 ZStack {
                     if arcs.isEmpty {
                         EmptyFolderView()
@@ -70,6 +69,9 @@ struct SunburstView: View {
             }
         }
         .padding(24)
+        .onChange(of: model.current?.id, initial: true) {
+            arcs = model.current.map(SunburstLayout.arcs(for:)) ?? []
+        }
     }
 
     // MARK: - Analytic hit testing
@@ -110,8 +112,11 @@ struct SunburstView: View {
     // MARK: - Arcs (pure rendering)
 
     private func arcLayer(_ arcs: [SunburstArc]) -> some View {
-        ZStack {
-            ForEach(arcs) { arc in
+        // Arcs thinner than this are invisible (see `arcShape`); drop them
+        // before `ForEach` so they aren't diffed on every hover update.
+        let visible = arcs.filter { $0.endAngle - $0.startAngle >= 0.004 }
+        return ZStack {
+            ForEach(visible) { arc in
                 arcShape(arc)
             }
             if let selected = arcs.first(where: { $0.id == model.selection?.id }) {
@@ -132,23 +137,21 @@ struct SunburstView: View {
                              outerRadius: rOut, startAngle: arc.startAngle, endAngle: end)
     }
 
-    @ViewBuilder private func arcShape(_ arc: SunburstArc) -> some View {
-        if arc.endAngle - arc.startAngle >= 0.004 {
-            let isHovered = hoveredID == arc.id
-            let dimmed = hoveredID != nil && !isHovered
-            let shape = sector(for: arc)
-            let offset = isHovered
-                ? CGSize(width: sin(arc.midAngle) * 5, height: -cos(arc.midAngle) * 5)
-                : .zero
+    private func arcShape(_ arc: SunburstArc) -> some View {
+        let isHovered = hoveredID == arc.id
+        let dimmed = hoveredID != nil && !isHovered
+        let shape = sector(for: arc)
+        let offset = isHovered
+            ? CGSize(width: sin(arc.midAngle) * 5, height: -cos(arc.midAngle) * 5)
+            : .zero
 
-            shape
-                .fill(radialGradient(arc.node.category))
-                .overlay(shape.stroke(theme.gap, lineWidth: 1.6))
-                .opacity(dimmed ? 0.5 : 1)
-                .offset(offset)
-                .shadow(color: isHovered ? .white.opacity(0.3) : .clear, radius: isHovered ? 5 : 0)
-                .animation(.easeOut(duration: 0.18), value: hoveredID)
-        }
+        return shape
+            .fill(radialGradient(arc.node.category))
+            .overlay(shape.stroke(theme.gap, lineWidth: 1.6))
+            .opacity(dimmed ? 0.5 : 1)
+            .offset(offset)
+            .shadow(color: isHovered ? .white.opacity(0.3) : .clear, radius: isHovered ? 5 : 0)
+            .animation(.easeOut(duration: 0.18), value: hoveredID)
     }
 
     private func radialGradient(_ category: FileCategory) -> RadialGradient {
