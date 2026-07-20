@@ -22,26 +22,10 @@ struct VisualizationStageView: View {
                 case .sunburst:
                     SunburstView()
                 case .treemap:
-                    placeholder
+                    TreemapView()
                 }
             }
             .frame(width: geo.size.width, height: geo.size.height)
-        }
-    }
-
-    @ViewBuilder private var placeholder: some View {
-        if let current = model.current {
-            VStack(spacing: 2) {
-                Text(current.name)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(theme.labelName)
-                Text(ByteFormat.string(current.size))
-                    .font(.system(size: 25, weight: .bold, design: .monospaced))
-                    .foregroundStyle(theme.labelBig)
-                Text("\(current.fileCount.formatted()) items")
-                    .font(.system(size: 11.5))
-                    .foregroundStyle(theme.labelSub)
-            }
         }
     }
 }
