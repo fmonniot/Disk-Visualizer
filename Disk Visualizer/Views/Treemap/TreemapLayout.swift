@@ -14,7 +14,7 @@ struct TreemapTile: Identifiable {
     var id: FileNode.ID { node.id }
 }
 
-enum TreemapLayout {
+nonisolated enum TreemapLayout {
     static func tiles(for nodes: [FileNode], in size: CGSize) -> [TreemapTile] {
         let children = nodes.filter { $0.size > 0 }
         guard !children.isEmpty, size.width > 0, size.height > 0 else { return [] }

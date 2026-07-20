@@ -8,7 +8,7 @@
 
 import Foundation
 
-enum ByteFormat {
+nonisolated enum ByteFormat {
     private static let tb: Double = 1_099_511_627_776
     private static let gb: Double = 1_073_741_824
     private static let mb: Double = 1_048_576

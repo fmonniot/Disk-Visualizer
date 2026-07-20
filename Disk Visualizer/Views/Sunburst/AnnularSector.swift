@@ -52,7 +52,7 @@ struct SunburstArc: Identifiable {
     var midAngle: Double { (startAngle + endAngle) / 2 }
 }
 
-enum SunburstLayout {
+nonisolated enum SunburstLayout {
     static let center = CGPoint(x: 360, y: 360)
     static let innerRadius: CGFloat = 84      // R0
     static let ringWidth: CGFloat = 57        // ringW
