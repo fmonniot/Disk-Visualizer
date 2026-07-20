@@ -10,99 +10,123 @@ import UniformTypeIdentifiers
 
 struct ContentView: View {
     @Environment(VisualizerModel.self) private var model
+    @Environment(\.colorScheme) private var colorScheme
     @State private var showImporter = false
 
+    private var theme: Theme { colorScheme == .light ? .light : .dark }
+
     var body: some View {
-        Group {
-            switch model.phase {
-            case .idle:
-                emptyState
-            case .scanning:
-                scanningState
-            case .loaded:
-                loadedState
-            case .failed(let message):
-                failureState(message)
-            }
-        }
-        .frame(minWidth: 720, minHeight: 480)
-        .fileImporter(
-            isPresented: $showImporter,
-            allowedContentTypes: [.folder],
-            allowsMultipleSelection: false
-        ) { result in
-            if case .success(let urls) = result, let url = urls.first {
-                model.scan(url: url)
-            }
-        }
-    }
-
-    private var emptyState: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "chart.pie")
-                .font(.system(size: 44, weight: .light))
-                .foregroundStyle(.secondary)
-            Text("Disk Visualizer")
-                .font(.title2.weight(.semibold))
-            Text("Choose a folder to scan and visualize how its space is used.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-            Button("Choose Folder…") { showImporter = true }
-                .controlSize(.large)
-                .buttonStyle(.borderedProminent)
-        }
-        .padding()
-    }
-
-    private var scanningState: some View {
-        VStack(spacing: 16) {
-            ProgressView()
-            Text("Scanning \(model.scannedURL?.lastPathComponent ?? "…")")
-                .font(.headline)
-            Text("Indexing files and calculating sizes")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-            Button("Cancel") { model.cancelScan() }
-        }
-        .padding()
-    }
-
-    private var loadedState: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if let root = model.root {
-                List([root], children: \.childrenOrNil) { node in
-                    HStack {
-                        Image(systemName: node.isDirectory ? "folder.fill" : "doc")
-                            .foregroundStyle(node.category.startColor)
-                        Text(node.name)
-                        Spacer()
-                        Text(ByteFormat.string(node.size))
-                            .font(.system(.body, design: .monospaced))
-                            .foregroundStyle(.secondary)
-                    }
+        content
+            .environment(\.theme, theme)
+            .foregroundStyle(theme.text)
+            .frame(minWidth: 820, minHeight: 560)
+            .navigationTitle(windowTitle)
+            .fileImporter(
+                isPresented: $showImporter,
+                allowedContentTypes: [.folder],
+                allowsMultipleSelection: false
+            ) { result in
+                if case .success(let urls) = result, let url = urls.first {
+                    model.scan(url: url)
                 }
             }
-        }
-        .toolbar {
-            ToolbarItem {
-                Button("Choose Folder…") { showImporter = true }
-            }
+    }
+
+    @ViewBuilder private var content: some View {
+        switch model.phase {
+        case .idle:
+            WelcomeView(chooseFolder: { showImporter = true })
+                .environment(\.theme, theme)
+        case .failed(let message):
+            FailureView(message: message, chooseFolder: { showImporter = true })
+                .environment(\.theme, theme)
+        case .scanning, .loaded:
+            mainLayout
         }
     }
 
-    private func failureState(_ message: String) -> some View {
-        VStack(spacing: 16) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 40, weight: .light))
-                .foregroundStyle(.orange)
-            Text("Couldn't scan that folder")
-                .font(.headline)
-            Text(message)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-            Button("Choose Folder…") { showImporter = true }
+    private var mainLayout: some View {
+        VStack(spacing: 0) {
+            TopBarView(onChooseFolder: { showImporter = true })
+            HStack(spacing: 0) {
+                SidebarTreeView()
+                ZStack {
+                    VisualizationStageView()
+                    if model.isScanning {
+                        LoadingOverlayView(name: model.scannedURL?.lastPathComponent ?? "…")
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                DetailsPanelView()
+            }
+            BottomBarView()
         }
-        .padding()
+    }
+
+    private var windowTitle: String {
+        if let name = model.root?.name { return "Disk Visualizer — \(name)" }
+        return "Disk Visualizer"
+    }
+}
+
+/// Shown before any scan.
+private struct WelcomeView: View {
+    @Environment(\.theme) private var theme
+    var chooseFolder: () -> Void
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack {
+                theme.backgroundGradient(diameter: max(geo.size.width, geo.size.height) * 1.2)
+                VStack(spacing: 16) {
+                    Image(systemName: "chart.pie.fill")
+                        .font(.system(size: 46, weight: .regular))
+                        .foregroundStyle(Color(hex: "8a7bff"))
+                    Text("Disk Visualizer")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundStyle(theme.name)
+                    Text("Choose a folder to scan and see how its space is used.")
+                        .font(.callout)
+                        .foregroundStyle(theme.muted2)
+                    Button("Choose Folder…", action: chooseFolder)
+                        .controlSize(.large)
+                        .buttonStyle(.borderedProminent)
+                        .tint(Color(hex: "6a4bff"))
+                        .padding(.top, 4)
+                }
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
+        }
+    }
+}
+
+private struct FailureView: View {
+    @Environment(\.theme) private var theme
+    let message: String
+    var chooseFolder: () -> Void
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack {
+                theme.backgroundGradient(diameter: max(geo.size.width, geo.size.height) * 1.2)
+                VStack(spacing: 16) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 40))
+                        .foregroundStyle(.orange)
+                    Text("Couldn't scan that folder")
+                        .font(.headline)
+                        .foregroundStyle(theme.name)
+                    Text(message)
+                        .font(.callout)
+                        .foregroundStyle(theme.muted2)
+                        .multilineTextAlignment(.center)
+                    Button("Choose Folder…", action: chooseFolder)
+                        .padding(.top, 4)
+                }
+                .padding(40)
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
+        }
     }
 }
 
