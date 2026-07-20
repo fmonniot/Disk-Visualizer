@@ -132,14 +132,14 @@ struct Disk_VisualizerTests {
     // MARK: - Helpers
 
     static func file(_ name: String, _ category: FileCategory, _ size: Int64) -> FileNode {
-        FileNode(name: name, url: URL(fileURLWithPath: "/tmp/\(name)"),
+        FileNode(name: name,
                  isDirectory: false, size: size, modified: Date(),
                  category: category, fileCount: 1, children: [])
     }
 
     static func folder(_ name: String, children: [FileNode]) -> FileNode {
         let size = children.reduce(0) { $0 + $1.size }
-        return FileNode(name: name, url: URL(fileURLWithPath: "/tmp/\(name)"),
+        return FileNode(name: name,
                         isDirectory: true, size: size, modified: Date(),
                         category: .folder, fileCount: children.count, children: children)
     }

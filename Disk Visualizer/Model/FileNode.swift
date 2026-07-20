@@ -10,9 +10,8 @@
 import Foundation
 
 nonisolated final class FileNode: Identifiable, @unchecked Sendable {
-    let id = UUID()
+    var id: ObjectIdentifier { ObjectIdentifier(self) }
     let name: String
-    let url: URL
     let isDirectory: Bool
 
     /// Total size in bytes (recursive, for directories).
@@ -28,9 +27,14 @@ nonisolated final class FileNode: Identifiable, @unchecked Sendable {
     let children: [FileNode]
     weak var parent: FileNode?
 
+    /// Absolute URL of the scan root. `nil` for every non-root node — their
+    /// `url` is instead computed on demand by walking `parent` (see below),
+    /// avoiding a per-node `URL`/`NSURL` allocation.
+    private let rootURL: URL?
+
     init(
         name: String,
-        url: URL,
+        rootURL: URL? = nil,
         isDirectory: Bool,
         size: Int64,
         modified: Date,
@@ -39,7 +43,7 @@ nonisolated final class FileNode: Identifiable, @unchecked Sendable {
         children: [FileNode]
     ) {
         self.name = name
-        self.url = url
+        self.rootURL = rootURL
         self.isDirectory = isDirectory
         self.size = size
         self.modified = modified
@@ -49,6 +53,14 @@ nonisolated final class FileNode: Identifiable, @unchecked Sendable {
         for child in children {
             child.parent = self
         }
+    }
+
+    /// Absolute filesystem URL, computed on demand by walking up to the root
+    /// (which stores the real scanned URL) and appending path components.
+    var url: URL {
+        if let rootURL { return rootURL }
+        guard let parent else { return URL(fileURLWithPath: name) }
+        return parent.url.appendingPathComponent(name)
     }
 
     /// A node with no navigable children (a plain file or an opaque package).

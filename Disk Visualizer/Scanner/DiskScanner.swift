@@ -28,14 +28,14 @@ nonisolated enum DiskScanner {
     /// Scans `url` recursively. Throws `Cancelled` if the surrounding task is
     /// cancelled; other filesystem errors (permissions, races) are skipped.
     static func scan(url: URL) throws -> FileNode {
-        try buildNode(at: url)
+        try buildNode(at: url, isRoot: true)
     }
 
     private static func checkCancellation() throws {
         if Task.isCancelled { throw Cancelled() }
     }
 
-    private static func buildNode(at url: URL) throws -> FileNode {
+    private static func buildNode(at url: URL, isRoot: Bool = false) throws -> FileNode {
         try checkCancellation()
 
         let values = try? url.resourceValues(forKeys: Set(resourceKeys))
@@ -44,13 +44,14 @@ nonisolated enum DiskScanner {
         let isPackage = (values?.isPackage ?? false) || isOpaqueByExtension(url)
         let name = url.lastPathComponent.isEmpty ? url.path : url.lastPathComponent
         let ownModified = values?.contentModificationDate ?? Date()
+        let rootURL = isRoot ? url : nil
 
         // Leaves: plain files, symlinks, and opaque package bundles.
         if !isDirectory || isSymlink || isPackage {
             let size = (isDirectory && !isSymlink) ? directorySize(url) : leafSize(values)
             let category = FileCategory.forFile(extension: url.pathExtension)
             return FileNode(
-                name: name, url: url, isDirectory: isDirectory,
+                name: name, rootURL: rootURL, isDirectory: isDirectory,
                 size: size, modified: ownModified,
                 category: category, fileCount: 1, children: []
             )
@@ -81,7 +82,7 @@ nonisolated enum DiskScanner {
         let category = dominantCategory(of: children) ?? .folder
 
         return FileNode(
-            name: name, url: url, isDirectory: true,
+            name: name, rootURL: rootURL, isDirectory: true,
             size: size, modified: modified,
             category: category, fileCount: fileCount, children: children
         )
