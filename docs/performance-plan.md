@@ -84,10 +84,10 @@ unlocks whole-volume scanning.
    Measured 864 → 154 B/node; at volume scale (3–5M nodes) this is the difference between
    ~500 MB–750 MB and 3–4 GB. All fields still set once in `init`, preserving the
    never-mutated-after-construction / `@unchecked Sendable` invariant.
-4. **Sort `children` by size (descending) once at scan time**, before constructing the
+4. ~~**Sort `children` by size (descending) once at scan time**, before constructing the
    node. Removes the per-call re-sorts in `SunburstLayout.arcs`, `SidebarTreeView`, and
    lets `TreemapLayout` skip its sort (area order ≡ size order). Pre-construction, so the
-   immutability invariant holds.
+   immutability invariant holds.~~ Done.
 5. **Rewrite the walk on `getattrlistbulk(2)` (or `fts(3)`) with a parallel worker pool**
    — the whole-volume scanner. Measured basis: `fts` does the same traversal 1.8× faster
    serially, and the two-process experiment shows the kernel scales with concurrency, so

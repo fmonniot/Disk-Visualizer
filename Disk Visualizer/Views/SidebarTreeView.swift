@@ -50,7 +50,7 @@ struct SidebarTreeView: View {
         func walk(_ node: FileNode, depth: Int) {
             rows.append(Row(node: node, depth: depth))
             guard !node.isLeaf, model.isExpanded(node) else { return }
-            for child in node.children.sorted(by: { $0.size > $1.size }) {
+            for child in node.children {
                 walk(child, depth: depth + 1)
             }
         }

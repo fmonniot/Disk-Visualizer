@@ -74,7 +74,7 @@ nonisolated enum SunburstLayout {
             guard total > 0 else { return }
 
             var cursor = start
-            for child in node.children.sorted(by: { $0.size > $1.size }) {
+            for child in node.children {
                 let span = (end - start) * Double(child.size) / total
                 recurse(child, depth: depth + 1, start: cursor, end: cursor + span)
                 cursor += span

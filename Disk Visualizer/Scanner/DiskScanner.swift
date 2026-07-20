@@ -82,6 +82,7 @@ nonisolated enum DiskScanner {
             }
         }
         if let cancelled { throw cancelled }
+        children.sort { $0.size > $1.size }
 
         let size = children.reduce(0) { $0 + $1.size }
         let fileCount = children.reduce(0) { $0 + $1.fileCount }

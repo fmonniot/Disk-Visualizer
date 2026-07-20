@@ -23,10 +23,10 @@ nonisolated enum TreemapLayout {
         guard total > 0 else { return [] }
 
         let scale = Double(size.width) * Double(size.height) / total
-        // Areas, largest first.
+        // `nodes` is already sorted by size descending (scan-time sort), so
+        // scaling to area preserves order without a re-sort here.
         let items = children
             .map { (node: $0, area: Double($0.size) * scale) }
-            .sorted { $0.area > $1.area }
 
         var result: [TreemapTile] = []
         var (rx, ry) = (0.0, 0.0)
