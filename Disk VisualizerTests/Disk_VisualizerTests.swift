@@ -146,6 +146,30 @@ struct Disk_VisualizerTests {
         #expect(app.size > 0)            // the inner payload was counted
     }
 
+    /// Excluded directory paths (the firmlink/system and nested-volume mount
+    /// points, in production) are left out of the walk entirely.
+    @Test func scannerSkipsExcludedPaths() throws {
+        let fm = FileManager.default
+        let root = fm.temporaryDirectory
+            .appendingPathComponent("dv-test-\(UUID().uuidString)", isDirectory: true)
+        try fm.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: root) }
+
+        let keep = root.appendingPathComponent("keep", isDirectory: true)
+        let drop = root.appendingPathComponent("drop", isDirectory: true)
+        try fm.createDirectory(at: keep, withIntermediateDirectories: true)
+        try fm.createDirectory(at: drop, withIntermediateDirectories: true)
+        try Data(count: 4096).write(to: keep.appendingPathComponent("in.bin"))
+        try Data(count: 8192).write(to: drop.appendingPathComponent("in.bin"))
+
+        let tree = try DiskScanner.scan(url: root, excluded: [drop.path])
+
+        #expect(tree.children.count == 1)
+        #expect(tree.children.first?.name == "keep")
+        // The excluded subtree contributes nothing to the totals.
+        #expect(tree.children.contains { $0.name == "drop" } == false)
+    }
+
     /// Symlinks are treated as leaves and never followed.
     @Test func scannerDoesNotFollowSymlinks() throws {
         let fm = FileManager.default

@@ -36,12 +36,18 @@ nonisolated enum DiskScanner {
 
     /// Scans `url` recursively. Throws `Cancelled` if the surrounding task is
     /// cancelled; other filesystem errors (permissions, races) are skipped.
-    static func scan(url: URL) throws -> FileNode {
-        try scan(url: url, isCancelled: { Task.isCancelled })
-    }
-
-    /// Testable/injectable variant: `isCancelled` is polled once per directory.
-    static func scan(url: URL, isCancelled: @escaping @Sendable () -> Bool) throws -> FileNode {
+    ///
+    /// - Parameters:
+    ///   - isCancelled: polled once per directory (default: the current task's
+    ///     cancellation).
+    ///   - excluded: directory paths to leave out of the walk. Defaults to the
+    ///     firmlink/system and nested-volume mount points below `url`; tests
+    ///     inject an explicit set.
+    static func scan(
+        url: URL,
+        isCancelled: @escaping @Sendable () -> Bool = { Task.isCancelled },
+        excluded: Set<String>? = nil
+    ) throws -> FileNode {
         let path = url.path
         let name = url.lastPathComponent.isEmpty ? url.path : url.lastPathComponent
 
@@ -77,8 +83,14 @@ nonisolated enum DiskScanner {
             )
         }
 
-        // A regular directory: drive the parallel walk.
-        let coordinator = ScanCoordinator(isCancelled: isCancelled)
+        // A regular directory: drive the parallel walk. When the root is a
+        // whole volume, `excluded` holds the synthetic firmlink mounts (e.g.
+        // `/System/Volumes/Data`) and any nested mounts (other volumes,
+        // external drives) so their bytes aren't crossed into or double-counted.
+        let coordinator = ScanCoordinator(
+            isCancelled: isCancelled,
+            excluded: excluded ?? excludedMountPoints(under: path)
+        )
         let root = Builder(name: name, ownModified: modified, parent: nil, rootURL: url)
         coordinator.push(root, path)
         coordinator.run()
@@ -96,7 +108,7 @@ nonisolated enum DiskScanner {
     /// pending subdirectory builders. Called off the coordinator lock so the
     /// syscalls run in parallel across workers.
     fileprivate static func readDirectory(
-        path: String, parent: Builder
+        path: String, parent: Builder, excluding excluded: Set<String>
     ) -> (leaves: [FileNode], subdirs: [(Builder, String)]) {
         var leaves: [FileNode] = []
         var subdirs: [(Builder, String)] = []
@@ -104,6 +116,10 @@ nonisolated enum DiskScanner {
         enumerateDirectory(path: path) { name, objType, modified, size in
             let childPath = join(path, name)
             if objType == objTypeDir {
+                // A firmlink/system mount or a nested volume: not part of this
+                // volume's tree (its content is reached elsewhere, or lives on
+                // another device).
+                if excluded.contains(childPath) { return }
                 let ext = fileExtension(of: name).lowercased()
                 let isOpaque = opaqueExtensions.contains(ext)
                     || (!ext.isEmpty && isPackageDirectory(childPath))
@@ -271,6 +287,47 @@ nonisolated enum DiskScanner {
         return values?.isPackage ?? false
     }
 
+    // MARK: - Volume topology
+
+    /// Mount points strictly below `rootPath` that the walk must not descend
+    /// into. Two things live here:
+    ///
+    /// - **Firmlink / system mounts** (`/System/Volumes/Data`, `/System/Volumes/
+    ///   Preboot`, `VM`, …). On the APFS boot volume group the writable Data
+    ///   volume is firmlinked so its content already appears at `/Users`,
+    ///   `/Applications`, etc.; its own mount point re-exposes the *same* bytes.
+    ///   These are flagged `MNT_DONTBROWSE` (Finder hides them for the same
+    ///   reason). Skipping them removes the double-counting.
+    /// - **Nested volumes** (external drives under `/Volumes`, network mounts).
+    ///   A whole-volume scan means the selected volume only, so any mount on a
+    ///   different filesystem than the root is left out.
+    ///
+    /// Using the mount table (rather than a per-entry device-id guard) is
+    /// necessary because the firmlinked Data volume deliberately reports the
+    /// *same* `st_dev` as `/`, so a device-change check can't see it.
+    private static func excludedMountPoints(under rootPath: String) -> Set<String> {
+        var buffer: UnsafeMutablePointer<statfs>?
+        let count = getmntinfo(&buffer, MNT_NOWAIT)
+        guard count > 0, let buffer else { return [] }
+
+        var excluded: Set<String> = []
+        for i in 0..<Int(count) {
+            let mountPoint = withUnsafeBytes(of: buffer[i].f_mntonname) { raw in
+                String(cString: raw.baseAddress!.assumingMemoryBound(to: CChar.self))
+            }
+            if isStrictDescendant(mountPoint, of: rootPath) {
+                excluded.insert(mountPoint)
+            }
+        }
+        return excluded
+    }
+
+    /// Whether `path` sits strictly below `root` (never equal to it).
+    private static func isStrictDescendant(_ path: String, of root: String) -> Bool {
+        if root == "/" { return path != "/" }
+        return path.hasPrefix(root.hasSuffix("/") ? root : root + "/")
+    }
+
     /// The category holding the most bytes among `children` — matching the
     /// design's `_dom` aggregation.
     private static func dominantCategory(of children: [FileNode]) -> FileCategory? {
@@ -319,9 +376,11 @@ private nonisolated final class ScanCoordinator: @unchecked Sendable {
     private(set) var rootResult: FileNode?
 
     private let isCancelled: @Sendable () -> Bool
+    private let excluded: Set<String>
 
-    init(isCancelled: @escaping @Sendable () -> Bool) {
+    init(isCancelled: @escaping @Sendable () -> Bool, excluded: Set<String>) {
         self.isCancelled = isCancelled
+        self.excluded = excluded
     }
 
     var wasCancelled: Bool {
@@ -345,7 +404,7 @@ private nonisolated final class ScanCoordinator: @unchecked Sendable {
 
     private func workerLoop() {
         while let (builder, path) = nextWork() {
-            let (leaves, subdirs) = DiskScanner.readDirectory(path: path, parent: builder)
+            let (leaves, subdirs) = DiskScanner.readDirectory(path: path, parent: builder, excluding: excluded)
             completeRead(builder, leaves: leaves, subdirs: subdirs)
         }
     }
