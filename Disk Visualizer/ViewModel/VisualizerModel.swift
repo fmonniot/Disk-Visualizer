@@ -38,7 +38,13 @@ final class VisualizerModel {
     var viewMode: ViewMode = .sunburst
     private(set) var scannedURL: URL?
 
+    /// Drives the folder importer sheet (toggled by the toolbar and ⌘O).
+    var isPresentingImporter = false
+    /// Transient confirmation message shown as a toast.
+    private(set) var toast: String?
+
     private var scanTask: Task<Void, Never>?
+    private var toastTask: Task<Void, Never>?
 
     var isScanning: Bool { phase == .scanning }
 
@@ -130,6 +136,23 @@ final class VisualizerModel {
     func goToParent() {
         if let parent = current?.parent {
             enter(parent)
+        }
+    }
+
+    // MARK: - Actions
+
+    /// Reveals a node in Finder and shows a confirmation toast.
+    func reveal(_ node: FileNode) {
+        RevealInFinder.reveal(node.url)
+        showToast("Revealing “\(node.name)” in Finder")
+    }
+
+    func showToast(_ message: String) {
+        toast = message
+        toastTask?.cancel()
+        toastTask = Task {
+            try? await Task.sleep(for: .seconds(2.6))
+            if !Task.isCancelled { toast = nil }
         }
     }
 

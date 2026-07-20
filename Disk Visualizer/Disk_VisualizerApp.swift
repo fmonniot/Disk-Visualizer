@@ -18,5 +18,11 @@ struct Disk_VisualizerApp: App {
         }
         .defaultSize(width: 960, height: 620)
         .windowResizability(.contentMinSize)
+        .commands {
+            CommandGroup(replacing: .newItem) {
+                Button("Open Folder…") { model.isPresentingImporter = true }
+                    .keyboardShortcut("o", modifiers: .command)
+            }
+        }
     }
 }

@@ -124,7 +124,7 @@ struct DetailsPanelView: View {
 
     private var revealButton: some View {
         Button {
-            if let url = node?.url { RevealInFinder.reveal(url) }
+            if let node { model.reveal(node) }
         } label: {
             Text("Reveal in Finder")
                 .font(.system(size: 13, weight: .medium))

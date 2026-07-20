@@ -11,18 +11,18 @@ import UniformTypeIdentifiers
 struct ContentView: View {
     @Environment(VisualizerModel.self) private var model
     @Environment(\.colorScheme) private var colorScheme
-    @State private var showImporter = false
 
     private var theme: Theme { colorScheme == .light ? .light : .dark }
 
     var body: some View {
+        @Bindable var model = model
         content
             .environment(\.theme, theme)
             .foregroundStyle(theme.text)
             .frame(minWidth: 820, minHeight: 560)
             .navigationTitle(windowTitle)
             .fileImporter(
-                isPresented: $showImporter,
+                isPresented: $model.isPresentingImporter,
                 allowedContentTypes: [.folder],
                 allowsMultipleSelection: false
             ) { result in
@@ -32,13 +32,15 @@ struct ContentView: View {
             }
     }
 
+    private func chooseFolder() { model.isPresentingImporter = true }
+
     @ViewBuilder private var content: some View {
         switch model.phase {
         case .idle:
-            WelcomeView(chooseFolder: { showImporter = true })
+            WelcomeView(chooseFolder: chooseFolder)
                 .environment(\.theme, theme)
         case .failed(let message):
-            FailureView(message: message, chooseFolder: { showImporter = true })
+            FailureView(message: message, chooseFolder: chooseFolder)
                 .environment(\.theme, theme)
         case .scanning, .loaded:
             mainLayout
@@ -47,7 +49,7 @@ struct ContentView: View {
 
     private var mainLayout: some View {
         VStack(spacing: 0) {
-            TopBarView(onChooseFolder: { showImporter = true })
+            TopBarView(onChooseFolder: chooseFolder)
             HStack(spacing: 0) {
                 SidebarTreeView()
                 ZStack {
@@ -61,6 +63,14 @@ struct ContentView: View {
             }
             BottomBarView()
         }
+        .overlay(alignment: .bottom) {
+            if let toast = model.toast {
+                ToastView(message: toast)
+                    .padding(.bottom, 78)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.easeOut(duration: 0.28), value: model.toast)
     }
 
     private var windowTitle: String {
