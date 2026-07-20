@@ -18,6 +18,8 @@ nonisolated enum DiskScanner {
         .contentModificationDateKey, .nameKey,
     ]
 
+    private static let resourceKeySet = Set(resourceKeys)
+
     /// Directory extensions we present as a single opaque item (their contents
     /// are summed for size but not exposed as navigable children).
     private static let opaqueExtensions: Set<String> = [
@@ -38,7 +40,7 @@ nonisolated enum DiskScanner {
     private static func buildNode(at url: URL, isRoot: Bool = false) throws -> FileNode {
         try checkCancellation()
 
-        let values = try? url.resourceValues(forKeys: Set(resourceKeys))
+        let values = try? url.resourceValues(forKeys: resourceKeySet)
         let isDirectory = values?.isDirectory ?? false
         let isSymlink = values?.isSymbolicLink ?? false
         let isPackage = (values?.isPackage ?? false) || isOpaqueByExtension(url)
@@ -66,15 +68,20 @@ nonisolated enum DiskScanner {
 
         var children: [FileNode] = []
         children.reserveCapacity(contents.count)
-        for child in contents {
-            do {
-                children.append(try buildNode(at: child))
-            } catch is Cancelled {
-                throw Cancelled()
-            } catch {
-                // Skip entries we can't read (permissions, transient errors).
+        var cancelled: Cancelled?
+        autoreleasepool {
+            for child in contents {
+                do {
+                    children.append(try buildNode(at: child))
+                } catch is Cancelled {
+                    cancelled = Cancelled()
+                    break
+                } catch {
+                    // Skip entries we can't read (permissions, transient errors).
+                }
             }
         }
+        if let cancelled { throw cancelled }
 
         let size = children.reduce(0) { $0 + $1.size }
         let fileCount = children.reduce(0) { $0 + $1.fileCount }
@@ -99,20 +106,26 @@ nonisolated enum DiskScanner {
             ?? 0)
     }
 
+    private static let directorySizeKeys: [URLResourceKey] = [
+        .totalFileAllocatedSizeKey, .fileAllocatedSizeKey, .fileSizeKey,
+    ]
+    private static let directorySizeKeySet = Set(directorySizeKeys)
+
     /// Sums allocated sizes of every regular file inside an opaque directory.
     private static func directorySize(_ url: URL) -> Int64 {
-        let keys: [URLResourceKey] = [.totalFileAllocatedSizeKey, .fileAllocatedSizeKey, .fileSizeKey]
         guard let enumerator = FileManager.default.enumerator(
             at: url,
-            includingPropertiesForKeys: keys,
+            includingPropertiesForKeys: directorySizeKeys,
             options: []
         ) else { return 0 }
 
         var total: Int64 = 0
         for case let fileURL as URL in enumerator {
             if Task.isCancelled { break }
-            let values = try? fileURL.resourceValues(forKeys: Set(keys))
-            total += leafSize(values)
+            autoreleasepool {
+                let values = try? fileURL.resourceValues(forKeys: directorySizeKeySet)
+                total += leafSize(values)
+            }
         }
         return total
     }

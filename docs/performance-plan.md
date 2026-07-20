@@ -74,9 +74,9 @@ unlocks whole-volume scanning.
    or cached in `VisualizerModel`); hover then only updates `hoveredID`. Also filter arcs
    with span < 0.004 rad out *before* the `ForEach` — they're invisible already
    (`SunburstView.arcShape`) but still get diffed.
-2. **Per-directory `autoreleasepool` + hoist the resource-key `Set` in
-   `DiskScanner.buildNode`.** Measured: −40% peak memory, −2.6% scan time, no downside.
-   Do regardless of step 5 (the same pattern applies inside the rewritten walk).
+2. ~~**Per-directory `autoreleasepool` + hoist the resource-key `Set` in
+   `DiskScanner.buildNode`.**~~ Done. Measured: −40% peak memory, −2.6% scan time, no
+   downside. Do regardless of step 5 (the same pattern applies inside the rewritten walk).
 3. **Slim `FileNode`: drop the stored `URL` (and optionally `UUID`).** Store only `name`
    (root keeps its absolute URL); compute the path on demand by walking `parent` — `url`
    is consumed in exactly two per-user-action places (`VisualizerModel.reveal`,
