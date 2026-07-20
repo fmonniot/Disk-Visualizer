@@ -67,6 +67,109 @@ struct Disk_VisualizerTests {
         #expect(movies.category == .video) // dominated by .mov files
     }
 
+    /// A deep, wide tree exercises the parallel worker pool and the bottom-up
+    /// aggregation cascade: every level's size and count must still add up.
+    @Test func scannerAggregatesDeepWideTree() throws {
+        let fm = FileManager.default
+        let root = fm.temporaryDirectory
+            .appendingPathComponent("dv-test-\(UUID().uuidString)", isDirectory: true)
+        try fm.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: root) }
+
+        // 4-way fan-out, 4 levels deep, a file at every directory: 4^4 leaf dirs
+        // plus files sprinkled throughout — enough entries to fan out to workers.
+        var expectedFiles = 0
+        func build(_ dir: URL, depth: Int) throws {
+            try Data(count: 1024).write(to: dir.appendingPathComponent("f\(depth).bin"))
+            expectedFiles += 1
+            guard depth < 4 else { return }
+            for i in 0..<4 {
+                let child = dir.appendingPathComponent("d\(depth)-\(i)", isDirectory: true)
+                try fm.createDirectory(at: child, withIntermediateDirectories: true)
+                try build(child, depth: depth + 1)
+            }
+        }
+        try build(root, depth: 0)
+
+        let tree = try DiskScanner.scan(url: root)
+
+        #expect(tree.fileCount == expectedFiles)
+        // Recompute size/count from the tree and check internal consistency.
+        func check(_ node: FileNode) {
+            guard !node.children.isEmpty else { return }
+            #expect(node.size == node.children.reduce(0) { $0 + $1.size })
+            #expect(node.fileCount == node.children.reduce(0) { $0 + $1.fileCount })
+            for child in node.children { check(child) }
+        }
+        check(tree)
+    }
+
+    /// Children are sorted by size (descending) at scan time.
+    @Test func scannerSortsChildrenBySize() throws {
+        let fm = FileManager.default
+        let root = fm.temporaryDirectory
+            .appendingPathComponent("dv-test-\(UUID().uuidString)", isDirectory: true)
+        try fm.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: root) }
+
+        try Data(count: 4096).write(to: root.appendingPathComponent("small.bin"))
+        try Data(count: 65536).write(to: root.appendingPathComponent("large.bin"))
+        try Data(count: 16384).write(to: root.appendingPathComponent("medium.bin"))
+
+        let tree = try DiskScanner.scan(url: root)
+        let sizes = tree.children.map(\.size)
+        #expect(sizes == sizes.sorted(by: >))
+        #expect(tree.children.first?.name == "large.bin")
+    }
+
+    /// An opaque bundle (`.app`) is summed for size but presented as a single
+    /// non-navigable leaf, not descended into.
+    @Test func scannerTreatsBundlesAsOpaqueLeaves() throws {
+        let fm = FileManager.default
+        let root = fm.temporaryDirectory
+            .appendingPathComponent("dv-test-\(UUID().uuidString)", isDirectory: true)
+        try fm.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: root) }
+
+        let bundle = root.appendingPathComponent("Thing.app", isDirectory: true)
+        let inner = bundle.appendingPathComponent("Contents", isDirectory: true)
+        try fm.createDirectory(at: inner, withIntermediateDirectories: true)
+        try Data(count: 4096).write(to: inner.appendingPathComponent("payload.bin"))
+
+        let tree = try DiskScanner.scan(url: root)
+        let app = try #require(tree.children.first { $0.name == "Thing.app" })
+
+        #expect(app.isDirectory)
+        #expect(app.isLeaf)              // contents summed but not navigable
+        #expect(app.children.isEmpty)
+        #expect(app.category == .app)
+        #expect(app.size > 0)            // the inner payload was counted
+    }
+
+    /// Symlinks are treated as leaves and never followed.
+    @Test func scannerDoesNotFollowSymlinks() throws {
+        let fm = FileManager.default
+        let root = fm.temporaryDirectory
+            .appendingPathComponent("dv-test-\(UUID().uuidString)", isDirectory: true)
+        try fm.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: root) }
+
+        let target = root.appendingPathComponent("target", isDirectory: true)
+        try fm.createDirectory(at: target, withIntermediateDirectories: true)
+        try Data(count: 4096).write(to: target.appendingPathComponent("inside.bin"))
+
+        try fm.createSymbolicLink(
+            at: root.appendingPathComponent("link"),
+            withDestinationURL: target
+        )
+
+        let tree = try DiskScanner.scan(url: root)
+        let link = try #require(tree.children.first { $0.name == "link" })
+
+        #expect(link.isLeaf)             // not recursed into the target
+        #expect(link.children.isEmpty)
+    }
+
     // MARK: - Sunburst layout.
 
     @Test func sunburstArcsSpanFullCircle() {

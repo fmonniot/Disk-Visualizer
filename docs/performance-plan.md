@@ -89,10 +89,18 @@ unlocks whole-volume scanning.
    lets `TreemapLayout` skip its sort (area order ≡ size order). Pre-construction, so the
    immutability invariant holds.~~ Done.
 5. **Rewrite the walk on `getattrlistbulk(2)` (or `fts(3)`) with a parallel worker pool**
-   — the whole-volume scanner. Measured basis: `fts` does the same traversal 1.8× faster
-   serially, and the two-process experiment shows the kernel scales with concurrency, so
-   a parallelized syscall-level walk should land 3–6× overall (≈2–4 s for 700k nodes;
-   minutes → tens of seconds for a full volume). Design notes:
+   — the whole-volume scanner. **Done** (`getattrlistbulk` + bounded worker pool over a
+   shared LIFO stack of directories; `DiskScanner.swift`). Measured basis: `fts` does the
+   same traversal 1.8× faster serially, and the two-process experiment shows the kernel
+   scales with concurrency, so a parallelized syscall-level walk should land 3–6× overall
+   (≈2–4 s for 700k nodes; minutes → tens of seconds for a full volume). What shipped vs.
+   the design notes below: `getattrlistbulk` with `FSOPT_PACK_INVAL_ATTRS` (fixed entry
+   layout) reading name/objtype/modtime/allocsize; a `DispatchQueue.concurrentPerform`
+   worker pool draining a shared stack with an `NSCondition`; a bottom-up finalization
+   cascade that builds each immutable `FileNode` off-lock once its children complete;
+   package detection via `opaqueExtensions` plus a targeted `isPackageKey` lookup for
+   dotted directory names. Not yet done: the whole-volume UX/entitlement work and the
+   `st_dev` single-volume guard (deferred with the whole-volume mode itself). Design notes:
    - `getattrlistbulk` is the better fit: one syscall returns a batch of directory
      entries *with* attributes (`ATTR_CMN_NAME`, `ATTR_CMN_OBJTYPE` for file/dir/symlink,
      `ATTR_CMN_MODTIME`, `ATTR_FILE_ALLOCSIZE`), replacing
