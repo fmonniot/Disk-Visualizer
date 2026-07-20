@@ -2,6 +2,13 @@
 
 Deferred enhancements, not yet implemented.
 
+## Performance & whole-volume scanning
+
+See [performance-plan.md](performance-plan.md) for the measured findings (memory is
+per-node `FileNode`/URL overhead; scan time is `contentsOfDirectory`; hover stutter is
+per-sample layout recompute) and the ranked plan, including the
+`getattrlistbulk`-based parallel scanner rewrite that whole-volume scanning requires.
+
 ## Wire up the search field
 
 The top-bar search pill (`TopBarView.searchPill`) is currently **decorative** —
