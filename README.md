@@ -3,8 +3,7 @@
 A native macOS app that scans a folder and visualizes its disk usage as an
 interactive sunburst chart.
 
-<!-- TODO: screenshot of the main view, see docs/TODO.md -->
-<!-- ![Disk Visualizer main view](docs/screenshot.png) -->
+![Disk Visualizer main view](docs/screenshot.png)
 
 ## Features
 
