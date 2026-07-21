@@ -25,10 +25,8 @@ struct BottomBarView: View {
 private struct LegendView: View {
     @Environment(\.theme) private var theme
 
-    private let columns = [GridItem(.adaptive(minimum: 96), spacing: 18, alignment: .leading)]
-
     var body: some View {
-        LazyVGrid(columns: columns, alignment: .leading, spacing: 7) {
+        HStack(spacing: 18) {
             ForEach(FileCategory.legendOrder, id: \.self) { category in
                 HStack(spacing: 7) {
                     GradientSwatch(category: category, size: 11, cornerRadius: 3.5)
@@ -39,6 +37,6 @@ private struct LegendView: View {
                 }
             }
         }
-        .frame(maxWidth: 520, alignment: .leading)
+        .fixedSize()
     }
 }
