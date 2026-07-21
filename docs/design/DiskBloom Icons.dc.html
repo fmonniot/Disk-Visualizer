@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<style>
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:#131317;}
+</style>
+</helmet>
+<div style="min-height:100vh;padding:56px 64px 96px;background:radial-gradient(120% 100% at 50% 0%,#1a1a20 0%,#131317 60%,#0e0e12 100%);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',system-ui,sans-serif;color:#e7e7ec;-webkit-font-smoothing:antialiased;">
+
+  <div style="max-width:1000px;margin:0 auto 48px;">
+    <div style="font-size:12px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#7b6dff;margin-bottom:10px;">App Icon</div>
+    <div style="font-size:30px;font-weight:680;letter-spacing:-0.02em;color:#f2f2f7;">DiskBloom — Sunburst</div>
+    <div style="font-size:14.5px;color:#8a8a94;margin-top:8px;max-width:560px;line-height:1.55;text-wrap:pretty;">The signature multi-ring sunburst on charcoal, in the app's type-colored gradients. Exported as a macOS asset catalog for Xcode.</div>
+  </div>
+
+  <div style="max-width:1000px;margin:0 auto;display:flex;align-items:flex-end;gap:64px;flex-wrap:wrap;">
+
+    <div>
+      <div style="width:260px;height:260px;border-radius:60px;overflow:hidden;position:relative;background:radial-gradient(120% 120% at 50% 8%,#17171d 0%,#0c0c10 58%,#08080b 100%);box-shadow:0 22px 50px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.06),inset 0 0 0 1px rgba(255,255,255,0.05);">{{ iconHero }}</div>
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:11px;color:#6f6f79;margin-top:14px;">1024×1024 master</div>
+    </div>
+
+    <div style="flex:1;min-width:280px;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#6a6a74;margin-bottom:18px;">Scales down to</div>
+      <div style="display:flex;align-items:flex-end;gap:22px;flex-wrap:wrap;">
+
+        <div style="text-align:center;">
+          <div style="width:128px;height:128px;border-radius:29px;overflow:hidden;position:relative;background:radial-gradient(120% 120% at 50% 8%,#17171d 0%,#0c0c10 58%,#08080b 100%);box-shadow:0 10px 24px rgba(0,0,0,0.5),inset 0 0 0 1px rgba(255,255,255,0.05);">{{ icon128 }}</div>
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:10.5px;color:#6f6f79;margin-top:9px;">128</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="width:80px;height:80px;border-radius:18px;overflow:hidden;position:relative;background:radial-gradient(120% 120% at 50% 8%,#17171d 0%,#0c0c10 58%,#08080b 100%);box-shadow:0 8px 18px rgba(0,0,0,0.5),inset 0 0 0 1px rgba(255,255,255,0.05);">{{ icon80 }}</div>
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:10.5px;color:#6f6f79;margin-top:9px;">80</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="width:48px;height:48px;border-radius:11px;overflow:hidden;position:relative;background:radial-gradient(120% 120% at 50% 8%,#17171d 0%,#0c0c10 58%,#08080b 100%);box-shadow:0 6px 14px rgba(0,0,0,0.5),inset 0 0 0 1px rgba(255,255,255,0.05);">{{ icon48 }}</div>
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:10.5px;color:#6f6f79;margin-top:9px;">48</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="width:32px;height:32px;border-radius:7.5px;overflow:hidden;position:relative;background:radial-gradient(120% 120% at 50% 8%,#17171d 0%,#0c0c10 58%,#08080b 100%);box-shadow:0 4px 10px rgba(0,0,0,0.5),inset 0 0 0 1px rgba(255,255,255,0.05);">{{ icon32 }}</div>
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:10.5px;color:#6f6f79;margin-top:9px;">32</div>
+        </div>
+
+      </div>
+      <div style="margin-top:34px;padding:16px 18px;border-radius:12px;background:rgba(123,109,255,0.08);border:1px solid rgba(123,109,255,0.22);max-width:420px;">
+        <div style="font-size:12.5px;color:#c9c4ff;line-height:1.55;text-wrap:pretty;">Asset catalog exported to <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">AppIcon-export/</span> — drop the <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">AppIcon.appiconset</span> into your Xcode <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">Assets.xcassets</span>. See <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">HANDOFF.md</span>.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  TYPES = {
+    video:   {c0:'#6a4bff', c1:'#a86bff'},
+    image:   {c0:'#22c55e', c1:'#5ee089'},
+    document:{c0:'#f59e0b', c1:'#ffca57'},
+    archive: {c0:'#ef4444', c1:'#ff7a72'},
+    app:     {c0:'#14b8c6', c1:'#54e0ea'},
+    audio:   {c0:'#ec4899', c1:'#ff77b4'},
+  };
+  ORDER = ['video','image','document','app','audio','archive'];
+
+  arc(cx,cy,rIn,rOut,a0,a1){
+    const pt=(r,a)=>[cx+r*Math.sin(a),cy-r*Math.cos(a)];
+    const large=(a1-a0)>Math.PI?1:0;
+    const [x0,y0]=pt(rOut,a0),[x1,y1]=pt(rOut,a1),[x2,y2]=pt(rIn,a1),[x3,y3]=pt(rIn,a0);
+    return 'M'+x0+' '+y0+' A'+rOut+' '+rOut+' 0 '+large+' 1 '+x1+' '+y1+' L'+x2+' '+y2+' A'+rIn+' '+rIn+' 0 '+large+' 0 '+x3+' '+y3+' Z';
+  }
+  tree(){
+    const F=(type,size)=>({type,size});
+    const T=(type,children)=>({type,children});
+    const root=T('root',[
+      T('video',[F('video',13),F('video',9),F('video',6),T('video',[F('video',4),F('video',3)])]),
+      T('image',[F('image',9),F('image',6),T('image',[F('image',4),F('image',2)])]),
+      T('document',[F('document',7),F('document',5),F('document',3)]),
+      T('app',[F('app',8),F('app',5)]),
+      T('audio',[F('audio',5),F('audio',4)]),
+      T('archive',[F('archive',9)]),
+    ]);
+    const size=(n)=>{ if(n.children){n.size=n.children.reduce((s,c)=>s+size(c),0);} return n.size; };
+    size(root);
+    return root;
+  }
+  computeArcs(node,maxDepth,a0=0,a1=Math.PI*2){
+    const arcs=[];
+    const rec=(n,depth,s,e)=>{
+      if(depth>maxDepth) return;
+      if(depth>=1) arcs.push({node:n,depth,a0:s,a1:e});
+      if(!n.children) return;
+      const total=n.size||1; let a=s;
+      const kids=[...n.children].sort((x,y)=>y.size-x.size);
+      for(const c of kids){ const span=(e-s)*(c.size/total); rec(c,depth+1,a,a+span); a+=span; }
+    };
+    rec(node,0,a0,a1);
+    return arcs;
+  }
+  grads(prefix,cx,cy,r,types){
+    return types.map(t=>{ const m=this.TYPES[t];
+      return React.createElement('radialGradient',{key:t,id:prefix+t,gradientUnits:'userSpaceOnUse',cx,cy,r},
+        React.createElement('stop',{offset:'0%',stopColor:m.c0}),
+        React.createElement('stop',{offset:'100%',stopColor:m.c1}));
+    });
+  }
+  sunburst(prefix){
+    const cx=256,cy=256,R0=54,ringW=44,maxDepth=3;
+    const outer=R0+maxDepth*ringW;
+    const arcs=this.computeArcs(this.tree(),maxDepth);
+    const defs=React.createElement('defs',null,[
+      ...this.grads(prefix,cx,cy,outer,this.ORDER),
+      React.createElement('radialGradient',{key:'c',id:prefix+'ctr',gradientUnits:'userSpaceOnUse',cx,cy:cy-14,r:R0},
+        React.createElement('stop',{offset:'0%',stopColor:'#1e1e28'}),
+        React.createElement('stop',{offset:'100%',stopColor:'#101017'})),
+    ]);
+    const paths=arcs.map(a=>{
+      let a0=a.a0,a1=a.a1; if(a1-a0<0.006) return null;
+      const rIn=R0+(a.depth-1)*ringW+2, rOut=R0+a.depth*ringW-2;
+      return React.createElement('path',{key:a.depth+'_'+a0.toFixed(3),d:this.arc(cx,cy,rIn,rOut,a0,a1),fill:'url(#'+prefix+a.node.type+')',stroke:'#0b0c10',strokeWidth:3,strokeLinejoin:'round'});
+    }).filter(Boolean);
+    const center=React.createElement('circle',{key:'ctr',cx,cy,r:R0-8,fill:'url(#'+prefix+'ctr)',stroke:'#0b0c10',strokeWidth:3});
+    const dot=React.createElement('circle',{key:'dot',cx,cy,r:11,fill:'#8a7bff',opacity:0.95});
+    return React.createElement('svg',{viewBox:'0 0 512 512',style:{position:'absolute',inset:0,width:'100%',height:'100%'}},[defs,...paths,center,dot]);
+  }
+  renderVals(){
+    return {
+      iconHero:this.sunburst('h_'),
+      icon128:this.sunburst('s1_'),
+      icon80:this.sunburst('s2_'),
+      icon48:this.sunburst('s3_'),
+      icon32:this.sunburst('s4_'),
+    };
+  }
+}
+</script>
+</body>
+</html>
