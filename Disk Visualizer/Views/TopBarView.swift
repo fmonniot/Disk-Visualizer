@@ -2,10 +2,9 @@
 //  TopBarView.swift
 //  Disk Visualizer
 //
-//  The bar beneath the window title: breadcrumbs on the left, a "Choose
-//  Folder" action and a search pill on the right. The search pill filters
-//  the sidebar tree and dims non-matching arcs/tiles by name, across the
-//  whole scanned tree.
+//  The bar beneath the window title: breadcrumbs on the left, a search pill
+//  on the right. The search pill filters the sidebar tree and dims
+//  non-matching arcs/tiles by name, across the whole scanned tree.
 //
 
 import SwiftUI
@@ -13,19 +12,11 @@ import SwiftUI
 struct TopBarView: View {
     @Environment(VisualizerModel.self) private var model
     @Environment(\.theme) private var theme
-    var onChooseFolder: () -> Void
 
     var body: some View {
         HStack(spacing: 14) {
             BreadcrumbsView()
             Spacer(minLength: 12)
-
-            Button(action: onChooseFolder) {
-                Label("Choose Folder", systemImage: "folder")
-                    .font(.system(size: 12.5, weight: .medium))
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(theme.crumb)
 
             searchPill
         }

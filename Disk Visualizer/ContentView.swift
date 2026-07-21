@@ -53,7 +53,7 @@ struct ContentView: View {
 
     private var mainLayout: some View {
         VStack(spacing: 0) {
-            TopBarView(onChooseFolder: chooseFolder)
+            TopBarView()
             HStack(spacing: 0) {
                 SidebarTreeView()
                 ZStack {
@@ -68,7 +68,7 @@ struct ContentView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 DetailsPanelView()
             }
-            BottomBarView()
+            BottomBarView(onChooseFolder: chooseFolder)
         }
         .background {
             GeometryReader { geo in
