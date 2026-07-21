@@ -29,7 +29,8 @@ scheme, or build from the command line:
 xcodebuild -scheme "Disk Visualizer" -destination "platform=macOS" build
 ```
 
-To build a Release build and install it into `~/Applications`:
+To build a Release build and install it into `/Applications` (pass `-u` to
+install into `~/Applications` instead):
 
 ```bash
 Scripts/install.sh
