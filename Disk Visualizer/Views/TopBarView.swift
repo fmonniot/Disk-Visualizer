@@ -3,12 +3,15 @@
 //  Disk Visualizer
 //
 //  The bar beneath the window title: breadcrumbs on the left, a "Choose
-//  Folder" action and a (decorative) search pill on the right.
+//  Folder" action and a search pill on the right. The search pill filters
+//  the sidebar tree and dims non-matching arcs/tiles by name, across the
+//  whole scanned tree.
 //
 
 import SwiftUI
 
 struct TopBarView: View {
+    @Environment(VisualizerModel.self) private var model
     @Environment(\.theme) private var theme
     var onChooseFolder: () -> Void
 
@@ -32,13 +35,24 @@ struct TopBarView: View {
         .overlay(alignment: .bottom) { Rectangle().fill(theme.border).frame(height: 1) }
     }
 
-    // Decorative for now; wiring up filtering is a later enhancement.
     private var searchPill: some View {
-        HStack(spacing: 7) {
+        @Bindable var model = model
+        return HStack(spacing: 7) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 12))
                 .opacity(0.7)
-            Text("Search")
+            TextField("Search", text: $model.searchQuery)
+                .textFieldStyle(.plain)
+            if model.isSearching {
+                Button {
+                    model.searchQuery = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 12))
+                        .opacity(0.7)
+                }
+                .buttonStyle(.plain)
+            }
         }
         .font(.system(size: 12.5))
         .foregroundStyle(theme.searchText)

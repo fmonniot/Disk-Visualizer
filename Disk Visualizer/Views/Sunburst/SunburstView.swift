@@ -139,7 +139,7 @@ struct SunburstView: View {
 
     private func arcShape(_ arc: SunburstArc) -> some View {
         let isHovered = hoveredID == arc.id
-        let dimmed = hoveredID != nil && !isHovered
+        let dimmed = (hoveredID != nil && !isHovered) || model.isSearchDimmed(arc.node)
         let shape = sector(for: arc)
         let offset = isHovered
             ? CGSize(width: sin(arc.midAngle) * 5, height: -cos(arc.midAngle) * 5)

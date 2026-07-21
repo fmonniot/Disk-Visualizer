@@ -50,10 +50,27 @@ final class VisualizerModel {
     /// Transient confirmation message shown as a toast.
     private(set) var toast: String?
 
+    /// Top-bar search text (name-only, matched against the whole scanned tree).
+    var searchQuery: String = "" {
+        didSet {
+            guard oldValue != searchQuery else { return }
+            scheduleSearchUpdate()
+        }
+    }
+    /// Nodes whose name matches `searchQuery`.
+    private(set) var searchMatchIDs: Set<FileNode.ID> = []
+    /// Matches, their ancestors, and their descendants — kept at full opacity
+    /// while searching; everything else is dimmed.
+    private(set) var searchRelevantIDs: Set<FileNode.ID> = []
+    /// Ancestors of matches, force-expanded in the sidebar so matches stay visible.
+    private(set) var searchAncestorIDs: Set<FileNode.ID> = []
+
     private var scanTask: Task<Void, Never>?
     private var toastTask: Task<Void, Never>?
+    private var searchTask: Task<Void, Never>?
 
     var isScanning: Bool { phase == .scanning }
+    var isSearching: Bool { !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
     // MARK: - Scanning
 
@@ -67,6 +84,10 @@ final class VisualizerModel {
         expanded = []
         unreadableDirectories = 0
         scannedItemCount = 0
+        searchQuery = ""
+        searchMatchIDs = []
+        searchRelevantIDs = []
+        searchAncestorIDs = []
 
         scanTask = Task {
             let granted = url.startAccessingSecurityScopedResource()
@@ -188,5 +209,83 @@ final class VisualizerModel {
 
     func isExpanded(_ node: FileNode) -> Bool {
         expanded.contains(node.id)
+    }
+
+    /// Whether the sidebar row should show as expanded, honoring both manual
+    /// disclosure state and folders force-opened to reveal a search match.
+    func isEffectivelyExpanded(_ node: FileNode) -> Bool {
+        isExpanded(node) || searchAncestorIDs.contains(node.id)
+    }
+
+    // MARK: - Search
+
+    func isSearchMatch(_ node: FileNode) -> Bool {
+        searchMatchIDs.contains(node.id)
+    }
+
+    /// True when a search is active and this node isn't a match, an ancestor
+    /// of one, or inside a matched folder — callers dim these.
+    func isSearchDimmed(_ node: FileNode) -> Bool {
+        isSearching && !searchRelevantIDs.contains(node.id)
+    }
+
+    private func scheduleSearchUpdate() {
+        searchTask?.cancel()
+        guard isSearching, let root else {
+            searchMatchIDs = []
+            searchRelevantIDs = []
+            searchAncestorIDs = []
+            return
+        }
+
+        let query = searchQuery
+        searchTask = Task {
+            try? await Task.sleep(for: .milliseconds(150))
+            guard !Task.isCancelled else { return }
+
+            // The tree can have hundreds of thousands of nodes (whole-volume
+            // scans), so the walk runs off the main actor and only the
+            // resulting ID sets are handed back.
+            let result = await Task.detached(priority: .userInitiated) {
+                Self.computeSearchMatches(root: root, query: query)
+            }.value
+
+            guard !Task.isCancelled else { return }
+            searchMatchIDs = result.matches
+            searchRelevantIDs = result.relevant
+            searchAncestorIDs = result.ancestors
+        }
+    }
+
+    private struct SearchResult {
+        var matches: Set<FileNode.ID> = []
+        var relevant: Set<FileNode.ID> = []
+        var ancestors: Set<FileNode.ID> = []
+    }
+
+    /// Single bottom-up pass: each node is visited once. `forcedRelevant`
+    /// carries down whether an ancestor already matched, so a matched
+    /// folder's whole subtree is marked relevant without re-walking it.
+    nonisolated private static func computeSearchMatches(root: FileNode, query: String) -> SearchResult {
+        var result = SearchResult()
+
+        @discardableResult
+        func walk(_ node: FileNode, forcedRelevant: Bool) -> Bool {
+            let selfMatches = node.name.localizedCaseInsensitiveContains(query)
+            let relevantBySelf = forcedRelevant || selfMatches
+
+            var childMatch = false
+            for child in node.children {
+                if walk(child, forcedRelevant: relevantBySelf) { childMatch = true }
+            }
+
+            if selfMatches { result.matches.insert(node.id) }
+            if relevantBySelf || childMatch { result.relevant.insert(node.id) }
+            if childMatch { result.ancestors.insert(node.id) }
+            return selfMatches || childMatch
+        }
+        walk(root, forcedRelevant: false)
+
+        return result
     }
 }

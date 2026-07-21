@@ -60,4 +60,4 @@ Both live under `Views/Sunburst/` and `Views/Treemap/`, each split into a pure l
 
 ## Known deferred work
 
-See `docs/TODO.md`: the top-bar search pill is currently decorative (not wired to filtering), and the scanning overlay is indeterminate because `DiskScanner` reports no progress.
+See `docs/TODO.md`: the scanning overlay is indeterminate because `DiskScanner` reports no progress.

@@ -49,7 +49,7 @@ struct SidebarTreeView: View {
         var rows: [Row] = []
         func walk(_ node: FileNode, depth: Int) {
             rows.append(Row(node: node, depth: depth))
-            guard !node.isLeaf, model.isExpanded(node) else { return }
+            guard !node.isLeaf, model.isEffectivelyExpanded(node) else { return }
             for child in node.children {
                 walk(child, depth: depth + 1)
             }
@@ -69,6 +69,8 @@ private struct TreeRow: View {
 
     private var isSelected: Bool { model.selection?.id == node.id }
     private var isCurrent: Bool { model.current?.id == node.id }
+    private var isSearchMatch: Bool { model.isSearchMatch(node) }
+    private var isDimmed: Bool { model.isSearchDimmed(node) }
 
     private var background: Color {
         if isSelected { return theme.treeSel }
@@ -84,6 +86,7 @@ private struct TreeRow: View {
             Text(node.name)
                 .lineLimit(1)
                 .truncationMode(.tail)
+                .fontWeight(isSearchMatch ? .semibold : .regular)
                 .frame(maxWidth: .infinity, alignment: .leading)
             Text(ByteFormat.string(node.size))
                 .font(.system(size: 11, design: .monospaced))
@@ -91,6 +94,7 @@ private struct TreeRow: View {
         }
         .font(.system(size: 13))
         .foregroundStyle(isSelected ? theme.treeSelText : theme.treeText)
+        .opacity(isDimmed ? 0.4 : 1)
         .frame(height: 27)
         .padding(.leading, CGFloat(depth * 13 + 8))
         .padding(.trailing, 8)
@@ -107,7 +111,7 @@ private struct TreeRow: View {
             Image(systemName: "chevron.right")
                 .font(.system(size: 9, weight: .semibold))
                 .foregroundStyle(theme.disc)
-                .rotationEffect(.degrees(model.isExpanded(node) ? 90 : 0))
+                .rotationEffect(.degrees(model.isEffectivelyExpanded(node) ? 90 : 0))
                 .frame(width: 14)
                 .contentShape(Rectangle())
                 .onTapGesture { model.toggleExpanded(node) }

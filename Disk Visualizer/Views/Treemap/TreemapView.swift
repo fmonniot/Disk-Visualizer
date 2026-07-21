@@ -32,7 +32,8 @@ struct TreemapView: View {
                                 TreemapCell(
                                     tile: tile,
                                     isSelected: model.selection?.id == tile.id,
-                                    isHovered: hoveredID == tile.id
+                                    isHovered: hoveredID == tile.id,
+                                    isDimmed: model.isSearchDimmed(tile.node)
                                 )
                                 .onHover { inside in
                                     if inside { hoveredID = tile.id }
@@ -77,6 +78,7 @@ private struct TreemapCell: View {
     let tile: TreemapTile
     let isSelected: Bool
     let isHovered: Bool
+    let isDimmed: Bool
 
     private var showLabel: Bool { tile.rect.width > 96 && tile.rect.height > 38 }
 
@@ -91,6 +93,7 @@ private struct TreemapCell: View {
                     .opacity(isSelected ? 1 : 0)
             )
             .brightness(isHovered ? 0.05 : 0)
+            .opacity(isDimmed ? 0.4 : 1)
             .frame(width: tile.rect.width, height: tile.rect.height)
             .offset(x: tile.rect.minX, y: tile.rect.minY)
             .animation(.easeOut(duration: 0.15), value: isSelected)
