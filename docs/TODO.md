@@ -2,17 +2,6 @@
 
 Deferred enhancements, not yet implemented.
 
-## Real scan progress
-
-**Partly done.** `DiskScanner.scan` now takes a `ScanProgress` counter that its
-workers bump per scanned entry; `VisualizerModel` polls it (~150 ms) into
-`scannedItemCount`, and `LoadingOverlayView` shows a live "N items scanned"
-subtitle. Still indeterminate (no bar). Possible follow-ups:
-
-- Show the current path being scanned, not just a count.
-- A determinate bar if a total can be estimated cheaply (e.g. from a prior
-  scan of the same root, or the volume's file count).
-
 ## App icon & README screenshot
 
 - Create a proper app icon (currently using the Xcode default/placeholder).
