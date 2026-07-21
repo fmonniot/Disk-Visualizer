@@ -2,18 +2,6 @@
 
 Deferred enhancements, not yet implemented.
 
-## Whole-volume scanning
-
-The performance work is done (see [performance-plan.md](performance-plan.md)), including
-the `getattrlistbulk`-based parallel scanner rewrite. What's left to actually support
-scanning a whole volume:
-
-- UX/entitlement work: the sandbox requires picking the volume root in the open panel,
-  and Full Disk Access governs protected locations — unreadable subtrees are skipped, so
-  results are best-effort without it.
-- An `st_dev` / `ATTR_CMN_DEVID` single-volume guard in the scanner (`FTS_XDEV`
-  equivalent), so the walk doesn't cross onto other mounted volumes.
-
 ## Real scan progress
 
 **Partly done.** `DiskScanner.scan` now takes a `ScanProgress` counter that its
