@@ -52,3 +52,7 @@ xcodebuild -scheme "Disk Visualizer" -destination "platform=macOS" test
 The UI was implemented from an HTML/CSS design handoff in
 [`docs/design/`](docs/design/); see [`CLAUDE.md`](CLAUDE.md) for how the
 Swift code maps to it.
+
+## License
+
+[MIT](LICENSE)
