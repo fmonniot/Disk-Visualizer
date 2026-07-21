@@ -16,6 +16,7 @@ struct TopBarView: View {
     var body: some View {
         HStack(spacing: 14) {
             BreadcrumbsView()
+                .layoutPriority(1)
             Spacer(minLength: 12)
 
             searchPill
@@ -30,7 +31,7 @@ struct TopBarView: View {
         @Bindable var model = model
         return HStack(spacing: 7) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 12))
+                .font(.system(size: 14))
                 .opacity(0.7)
             TextField("Search", text: $model.searchQuery)
                 .textFieldStyle(.plain)
@@ -49,7 +50,7 @@ struct TopBarView: View {
         .foregroundStyle(theme.searchText)
         .padding(.horizontal, 12)
         .frame(height: 30)
-        .frame(minWidth: 160, alignment: .leading)
+        .frame(minWidth: 184, maxWidth: 260, alignment: .leading)
         .background(theme.searchBg, in: RoundedRectangle(cornerRadius: 8))
         .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(theme.searchBorder, lineWidth: 1))
     }
