@@ -142,7 +142,8 @@ final class VisualizerModel {
         var ids: Set<FileNode.ID> = []
         func walk(_ node: FileNode, depth: Int) {
             guard !node.isLeaf else { return }
-            if depth <= 2 { ids.insert(node.id) }
+            ids.insert(node.id)
+            guard depth < 2 else { return }
             for child in node.children { walk(child, depth: depth + 1) }
         }
         walk(root, depth: 0)

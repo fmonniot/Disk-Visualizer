@@ -2,12 +2,17 @@
 
 Deferred enhancements, not yet implemented.
 
-## Performance & whole-volume scanning
+## Whole-volume scanning
 
-See [performance-plan.md](performance-plan.md) for the measured findings (memory is
-per-node `FileNode`/URL overhead; scan time is `contentsOfDirectory`; hover stutter is
-per-sample layout recompute) and the ranked plan, including the
-`getattrlistbulk`-based parallel scanner rewrite that whole-volume scanning requires.
+The performance work is done (see [performance-plan.md](performance-plan.md)), including
+the `getattrlistbulk`-based parallel scanner rewrite. What's left to actually support
+scanning a whole volume:
+
+- UX/entitlement work: the sandbox requires picking the volume root in the open panel,
+  and Full Disk Access governs protected locations — unreadable subtrees are skipped, so
+  results are best-effort without it.
+- An `st_dev` / `ATTR_CMN_DEVID` single-volume guard in the scanner (`FTS_XDEV`
+  equivalent), so the walk doesn't cross onto other mounted volumes.
 
 ## Real scan progress
 

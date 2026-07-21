@@ -121,5 +121,5 @@ unlocks whole-volume scanning.
      user-selected-files entitlement covers descendants), and Full Disk Access governs
      protected locations — unreadable subtrees are skipped, so results are best-effort
      without it. Progress reporting (see docs/TODO.md) becomes essential at this scale.
-6. **Micro:** prune `initialExpansion` recursion below depth 2. Leave `directorySize`
-   as-is (subsumed by step 5's walk anyway).
+6. ~~**Micro:** prune `initialExpansion` recursion below depth 2.~~ Done. Leave
+   `directorySize` as-is (subsumed by step 5's walk anyway).
