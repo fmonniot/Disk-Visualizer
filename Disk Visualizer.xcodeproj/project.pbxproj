@@ -31,6 +31,7 @@
 		28A801C7300D9817000E12A7 /* support.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = support.js; sourceTree = "<group>"; };
 		28A801C9300D9817000E12A7 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		28A80283300E7D54000E12A7 /* TODO.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = TODO.md; sourceTree = "<group>"; };
+		28A80284300F022F000E12A7 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -79,6 +80,7 @@
 		28A80188300D975B000E12A7 = {
 			isa = PBXGroup;
 			children = (
+				28A80284300F022F000E12A7 /* README.md */,
 				28A801CB300D9817000E12A7 /* docs */,
 				28A80193300D975B000E12A7 /* Disk Visualizer */,
 				28A801A3300D975C000E12A7 /* Disk VisualizerTests */,
