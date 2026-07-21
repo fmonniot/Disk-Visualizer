@@ -19,11 +19,6 @@ final class VisualizerModel {
         case failed(String)
     }
 
-    enum ViewMode: String, CaseIterable {
-        case sunburst = "Sunburst"
-        case treemap = "Treemap"
-    }
-
     private(set) var phase: Phase = .idle
 
     /// Root of the scanned tree (the folder the user picked).
@@ -35,7 +30,6 @@ final class VisualizerModel {
     /// Folders expanded in the sidebar tree.
     private(set) var expanded: Set<FileNode.ID> = []
 
-    var viewMode: ViewMode = .sunburst
     private(set) var scannedURL: URL?
 
     /// Number of directories skipped for permission reasons in the last scan.

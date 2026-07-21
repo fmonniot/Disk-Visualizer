@@ -2,8 +2,8 @@
 //  TooltipView.swift
 //  Disk Visualizer
 //
-//  Floating hover card used by the sunburst and treemap: name, size, and the
-//  node's share of its parent.
+//  Floating hover card used by the sunburst: name, size, and the node's share
+//  of its parent.
 //
 
 import SwiftUI

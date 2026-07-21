@@ -2,8 +2,7 @@
 //  BottomBarView.swift
 //  Disk Visualizer
 //
-//  The footer bar: the color legend on the left and the Sunburst/Treemap
-//  view toggle on the right.
+//  The footer bar: the color legend.
 //
 
 import SwiftUI
@@ -12,10 +11,9 @@ struct BottomBarView: View {
     @Environment(\.theme) private var theme
 
     var body: some View {
-        HStack(spacing: 16) {
+        HStack {
             LegendView()
-            Spacer(minLength: 12)
-            ViewToggle()
+            Spacer(minLength: 0)
         }
         .padding(.horizontal, 18)
         .frame(height: 60)
@@ -42,36 +40,5 @@ private struct LegendView: View {
             }
         }
         .frame(maxWidth: 520, alignment: .leading)
-    }
-}
-
-private struct ViewToggle: View {
-    @Environment(VisualizerModel.self) private var model
-    @Environment(\.theme) private var theme
-
-    var body: some View {
-        HStack(spacing: 2) {
-            ForEach(VisualizerModel.ViewMode.allCases, id: \.self) { mode in
-                let active = model.viewMode == mode
-                Button {
-                    withAnimation(.easeInOut(duration: 0.15)) { model.viewMode = mode }
-                } label: {
-                    Text(mode.rawValue)
-                        .font(.system(size: 12.5, weight: .medium))
-                        .foregroundStyle(active ? theme.toggleActiveText : theme.toggleText)
-                        .padding(.horizontal, 15)
-                        .padding(.vertical, 6)
-                        .background {
-                            if active {
-                                RoundedRectangle(cornerRadius: 7).fill(theme.toggleActiveBg)
-                            }
-                        }
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(3)
-        .background(theme.searchBg, in: RoundedRectangle(cornerRadius: 9))
-        .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(theme.searchBorder, lineWidth: 1))
     }
 }

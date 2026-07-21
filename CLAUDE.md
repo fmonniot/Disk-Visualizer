@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A native macOS SwiftUI app (macOS 26.5+, Xcode project, no Swift Package Manager) that scans a user-chosen folder and visualizes its disk usage as a **sunburst** or **treemap**. It was implemented from an HTML/CSS design handoff (`docs/design/DiskBloom.dc.html`) — that file is the source of truth for pixel dimensions, colors, and layout math. `docs/design/README.md` explains the handoff; the Swift code ports it (`Theme` mirrors the design palettes, `FileCategory` mirrors its `TYPES` table, `ByteFormat` mirrors `fmt()`, `TreemapLayout` ports `squarify()`).
+A native macOS SwiftUI app (macOS 26.5+, Xcode project, no Swift Package Manager) that scans a user-chosen folder and visualizes its disk usage as a **sunburst**. It was implemented from an HTML/CSS design handoff (`docs/design/DiskBloom.dc.html`) — that file is the source of truth for pixel dimensions, colors, and layout math. `docs/design/README.md` explains the handoff; the Swift code ports it (`Theme` mirrors the design palettes, `FileCategory` mirrors its `TYPES` table, `ByteFormat` mirrors `fmt()`).
 
 ## Build, test, run
 
@@ -22,13 +22,13 @@ xcodebuild -scheme "Disk Visualizer" -destination "platform=macOS" \
   test -only-testing:"Disk VisualizerTests/Disk_VisualizerTests/byteFormatting"
 ```
 
-Unit tests are the primary way to verify logic here — the scanner, both layouts, byte formatting, and category classification all have coverage in `Disk VisualizerTests/Disk_VisualizerTests.swift`. This environment cannot launch the GUI or run UI tests; for anything visual, ask the user to check.
+Unit tests are the primary way to verify logic here — the scanner, the sunburst layout, byte formatting, and category classification all have coverage in `Disk VisualizerTests/Disk_VisualizerTests.swift`. This environment cannot launch the GUI or run UI tests; for anything visual, ask the user to check.
 
 ## Concurrency model (important)
 
 The project sets `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` — **everything is `@MainActor` by default.** The scan pipeline is deliberately kept off the main actor:
 
-- `FileNode`, `FileCategory`, `DiskScanner`, `TreemapLayout`, `SunburstLayout` are all marked `nonisolated` so they can run on a background `Task.detached`.
+- `FileNode`, `FileCategory`, `DiskScanner`, `SunburstLayout` are all marked `nonisolated` so they can run on a background `Task.detached`.
 - `FileNode` is `@unchecked Sendable`: it is built entirely on the background task and **never mutated after construction**, so passing the finished tree back to the main actor is safe. Preserve this invariant — don't add post-construction mutation.
 - `VisualizerModel.scan()` runs `DiskScanner.scan` on a detached user-initiated task and checks `Task.isCancelled` before applying results. It still wraps folder access in `startAccessingSecurityScopedResource()`, but the app is **not sandboxed** (`ENABLE_APP_SANDBOX = NO`) — a deliberate choice so whole-volume scans can read TCC-protected locations once the user grants the app **Full Disk Access** (no App Store / Developer ID target). The call is a harmless no-op without the sandbox.
 
@@ -41,12 +41,9 @@ Single source of truth is **`VisualizerModel`** (`@MainActor @Observable`), crea
 
 `ContentView` switches on `phase` and lays out the loaded UI: `TopBarView` / `SidebarTreeView` / `VisualizationStageView` (with `LoadingOverlayView` while scanning) / `DetailsPanelView` / `BottomBarView`, plus a transient `ToastView`.
 
-### The two visualizations
+### The sunburst visualization
 
-Both live under `Views/Sunburst/` and `Views/Treemap/`, each split into a pure layout enum (testable, `nonisolated`) and a SwiftUI view:
-
-- **Sunburst** lays arcs out in a **fixed 720×720 coordinate space** then scales to fit. Hit-testing is *analytic* (cursor → radius → depth, angle → segment via `SunburstView.arc(at:scale:in:)`) rather than SwiftUI hit-testing, so the highlight, tooltip node, and tooltip position always agree. Angles start from the top (straight up = angle 0).
-- **Treemap** uses a squarified layout (`TreemapLayout.tiles(for:in:)`) packing tiles into the given rect with aspect ratios near 1.
+Lives under `Views/Sunburst/`, split into a pure layout enum (testable, `nonisolated`) and a SwiftUI view. Arcs are laid out in a **fixed 720×720 coordinate space** then scaled to fit. Hit-testing is *analytic* (cursor → radius → depth, angle → segment via `SunburstView.arc(at:scale:in:)`) rather than SwiftUI hit-testing, so the highlight, tooltip node, and tooltip position always agree. Angles start from the top (straight up = angle 0).
 
 ### Theming
 
@@ -60,4 +57,4 @@ Both live under `Views/Sunburst/` and `Views/Treemap/`, each split into a pure l
 
 ## Known deferred work
 
-See `docs/TODO.md`: the scanning overlay is indeterminate because `DiskScanner` reports no progress.
+See `docs/TODO.md` for the current backlog.

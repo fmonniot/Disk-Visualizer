@@ -70,15 +70,11 @@ struct Theme {
     var centerC1: Color
     var gap: Color
 
-    // Treemap tiles.
-    var tileHi: Color
+    // Sunburst selection ring.
     var tileSel: Color
 
-    // Legend & view toggle.
+    // Legend.
     var legend: Color
-    var toggleActiveBg: Color
-    var toggleActiveText: Color
-    var toggleText: Color
 
     // Scanning overlay.
     var overlayBg: Color
@@ -138,9 +134,8 @@ extension Theme {
         labelName: Color(hex: "c7c7cf"), labelBig: Color(hex: "f2f2f7"),
         labelSub: Color(hex: "7a7a84"), labelBack: Color(hex: "8b8b95"),
         centerC0: Color(hex: "21222b"), centerC1: Color(hex: "101117"), gap: Color(hex: "0b0c10"),
-        tileHi: .white.opacity(0.15), tileSel: .white.opacity(0.92),
+        tileSel: .white.opacity(0.92),
         legend: Color(hex: "a9a9b3"),
-        toggleActiveBg: .white.opacity(0.15), toggleActiveText: .white, toggleText: Color(hex: "9a9aa4"),
         overlayBg: Color(hex: "08080b").opacity(0.94),
         scanRing: .white.opacity(0.08), scanText: Color(hex: "d8d8e0"),
         scanSub: Color(hex: "7a7a84"), scanTrack: .white.opacity(0.07), accent: Color(hex: "8a7bff"),
@@ -168,9 +163,8 @@ extension Theme {
         labelName: Color(hex: "55555c"), labelBig: Color(hex: "141419"),
         labelSub: Color(hex: "8a8a92"), labelBack: Color(hex: "8a8a92"),
         centerC0: Color(hex: "ffffff"), centerC1: Color(hex: "eceef2"), gap: Color(hex: "eef0f3"),
-        tileHi: .white.opacity(0.22), tileSel: .white.opacity(0.95),
+        tileSel: .white.opacity(0.95),
         legend: Color(hex: "6a6a72"),
-        toggleActiveBg: .white, toggleActiveText: Color(hex: "18181d"), toggleText: Color(hex: "77777f"),
         overlayBg: Color(hex: "e8e9ee").opacity(0.94),
         scanRing: .black.opacity(0.08), scanText: Color(hex: "33333a"),
         scanSub: Color(hex: "8a8a92"), scanTrack: .black.opacity(0.07), accent: Color(hex: "8a7bff"),

@@ -284,26 +284,6 @@ struct Disk_VisualizerTests {
         #expect(SunburstView.arc(at: far, scale: 1, in: arcs) == nil)
     }
 
-    // MARK: - Treemap layout.
-
-    @Test func treemapTilesCoverArea() {
-        let children = [
-            Self.file("a", .video, 500),
-            Self.file("b", .image, 300),
-            Self.file("c", .document, 200),
-        ]
-        let size = CGSize(width: 1000, height: 620)
-        let tiles = TreemapLayout.tiles(for: children, in: size)
-
-        #expect(tiles.count == 3)
-        let covered = tiles.reduce(0.0) { $0 + Double($1.rect.width * $1.rect.height) }
-        #expect(abs(covered - Double(size.width * size.height)) < 1.0)
-
-        // Largest node yields the largest tile.
-        let largest = tiles.max { $0.rect.width * $0.rect.height < $1.rect.width * $1.rect.height }
-        #expect(largest?.node.name == "a")
-    }
-
     // MARK: - Helpers
 
     static func file(_ name: String, _ category: FileCategory, _ size: Int64) -> FileNode {
